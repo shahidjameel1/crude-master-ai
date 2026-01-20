@@ -1,0 +1,33 @@
+{
+    "name": "crude-master-ai",
+    "version": "1.0.0",
+    "description": "Autonomous AI Trading Dashboard for MCX Crude Oil Futures",
+    "private": true,
+    "workspaces": [
+        "frontend",
+        "backend",
+        "shared"
+    ],
+    "scripts": {
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "npm run dev --workspace=backend",
+        "dev:frontend": "npm run dev --workspace=frontend",
+        "build": "npm run build --workspaces",
+        "test": "npm run test --workspaces",
+        "deploy": "npm run build && docker-compose up -d"
+    },
+    "keywords": [
+        "trading",
+        "mcx",
+        "crude-oil",
+        "algorithmic-trading",
+        "ict",
+        "smc",
+        "angel-one"
+    ],
+    "author": "Crude Master AI",
+    "license": "MIT",
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

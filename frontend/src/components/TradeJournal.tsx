@@ -1,0 +1,67 @@
+import { ArrowUpRight, ArrowDownRight, Filter } from 'lucide-react';
+import { Trade } from '../hooks/usePaperTrading';
+
+interface TradeJournalProps {
+    trades: Trade[];
+}
+
+export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
+    // const [filter, setFilter] = useState('all');
+
+    // Format trades for the table
+    const trades = rawTrades.map(t => ({
+        id: t.id,
+        time: new Date(t.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: t.direction,
+        symbol: 'CRUDEOIL',
+        entry: t.entryPrice,
+        exit: t.exitPrice || '-',
+        pl: t.pnl || 0,
+        status: t.status === 'CLOSED' ? (t.pnl && t.pnl > 0 ? 'WIN' : 'LOSS') : 'OPEN'
+    }));
+
+    return (
+        <div className="h-full bg-neutral-900/50 border border-white/10 rounded-xl p-4 flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-medium text-neutral-400">Trade Journal</h3>
+                <button className="p-1.5 hover:bg-white/5 rounded text-neutral-500">
+                    <Filter size={16} />
+                </button>
+            </div>
+
+            <div className="flex-1 overflow-auto pr-2 custom-scrollbar">
+                <table className="w-full text-xs text-left border-collapse">
+                    <thead className="text-neutral-500 sticky top-0 bg-neutral-900/90 backdrop-blur z-10">
+                        <tr>
+                            <th className="font-medium p-2 border-b border-white/5">Time</th>
+                            <th className="font-medium p-2 border-b border-white/5">Type</th>
+                            <th className="font-medium p-2 border-b border-white/5">Entry</th>
+                            <th className="font-medium p-2 border-b border-white/5">Exit</th>
+                            <th className="font-medium p-2 border-b border-white/5 text-right">P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {trades.map(trade => (
+                            <tr key={trade.id} className="hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors group">
+                                <td className="p-2 text-neutral-400 font-mono">{trade.time}</td>
+                                <td className="p-2">
+                                    <span className={`flex items-center gap-1 font-bold ${trade.type === 'LONG' ? 'text-primary' : 'text-rose-500'}`}>
+                                        {trade.type === 'LONG' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                        {trade.type}
+                                    </span>
+                                </td>
+                                <td className="p-2 text-neutral-300">{trade.entry}</td>
+                                <td className="p-2 text-neutral-300">{trade.exit}</td>
+                                <td className="p-2 text-right font-medium">
+                                    <span className={trade.pl > 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                        {trade.pl > 0 ? '+' : ''}{trade.pl}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
