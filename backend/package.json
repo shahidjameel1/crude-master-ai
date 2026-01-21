@@ -1,5 +1,5 @@
 {
-    "name": "backend",
+    "name": "crude-master-backend",
     "version": "1.0.0",
     "description": "CRUDE-MASTER AI Backend Trading Engine",
     "main": "dist/server.js",

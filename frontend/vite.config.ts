@@ -14,7 +14,7 @@ export default defineConfig({
         port: 5174, // Avoid 3000 (Orion) and 3001 (Backend)
         proxy: {
             '/api': {
-                target: 'http://localhost:3001',
+                target: 'http://localhost:3002',
                 changeOrigin: true,
             },
             '/ws': {
