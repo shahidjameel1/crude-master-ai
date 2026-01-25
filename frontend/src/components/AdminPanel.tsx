@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, Shield, Settings, Database, Activity, Lock, EyeOff } from 'lucide-react';
 
 export function AdminPanel() {

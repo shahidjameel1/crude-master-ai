@@ -17,7 +17,9 @@ export const useHeartbeat = () => {
         const checkHeartbeat = async () => {
             const start = Date.now();
             try {
-                const res = await fetch('http://localhost:3000/api/security/heartbeat');
+                const res = await fetch('/api/security/heartbeat', {
+                    credentials: 'include'
+                });
                 const end = Date.now();
                 if (res.ok) {
                     setStatus({

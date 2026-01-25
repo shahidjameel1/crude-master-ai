@@ -4,12 +4,26 @@ import WebSocket from "ws";
 import { SmartAPI, WebSocketV2 } from "smartapi-javascript";
 import dotenv from "dotenv";
 import path from "path";
-// Load .env from root directory
-dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
+import cookieParser from "cookie-parser";
+import cookie from "cookie";
+import jwt from "jsonwebtoken";
+import { CandleFinalizationService } from "./services/CandleFinalizationService";
+import { AuthController } from "./controllers/AuthController";
+import { authMiddleware } from "./middleware/authMiddleware";
+import { systemState } from "./services/SystemStateService";
+import { strategyEngine } from "./services/StrategyEngineService";
+import { OrderService } from "./services/OrderService";
+import { setOrderService, SecurityController } from "./controllers/SecurityController";
+import { HealthService } from "./services/HealthService";
+import { Candle } from "./types";
+import { EvolutionController } from "./controllers/EvolutionController";
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 const app = express();
 
@@ -26,6 +40,7 @@ app.use(cors({
 
 // 3. Parameter Pollution Protection
 app.use(hpp());
+app.use(cookieParser());
 
 // 4. Rate Limiting (100 req per 15 min)
 const limiter = rateLimit({
@@ -38,14 +53,41 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10kb' })); // Body limit
 
 // Import Security Controller
-import { SecurityController } from './controllers/SecurityController';
+// Removed local import, using from controllers/SecurityController instead
 // Import Chaos Engine
 import { ChaosEngine } from './logic/ChaosEngine';
 
+// Debug Logger
+app.use((req, res, next) => {
+    const hasCookie = !!req.cookies.auth_token;
+    console.log(`[RECEIVED] ${req.method} ${req.path} | Cookie present: ${hasCookie}`);
+    next();
+});
+
 app.use(ChaosEngine.middleware);
 
-/* ───────── SECURITY ROUTES ───────── */
+/* ───────── AUTH ROUTES ───────── */
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100, // Increased for debugging
+    message: 'Too many login attempts, please try again later.'
+});
+app.post('/api/auth/login', loginLimiter, AuthController.login);
+app.post('/api/auth/logout', AuthController.logout);
+app.get('/api/auth/check', authMiddleware, AuthController.check);
+
+/* ───────── SECURITY ROUTES (PROTECTED) ───────── */
+app.use('/api/security', authMiddleware);
 app.post('/api/security/glass-mode', SecurityController.toggleGlassMode);
+
+/* ───────── EVOLUTION ROUTES (PROTECTED) ───────── */
+app.use('/api/evolution', authMiddleware);
+app.get('/api/evolution/logs', EvolutionController.getEvolutionLogs);
+app.post('/api/evolution/logs', EvolutionController.addEvolutionLog);
+app.get('/api/evolution/session-ratings', EvolutionController.getSessionRatings);
+app.post('/api/evolution/session-ratings', EvolutionController.addSessionRating);
+app.get('/api/evolution/regime-state', EvolutionController.getRegimeState);
+app.post('/api/evolution/regime-state', EvolutionController.updateRegimeState);
 app.post('/api/security/kill', SecurityController.emergencyKill);
 app.get('/api/security/heartbeat', SecurityController.heartbeat);
 app.post('/api/security/reset', SecurityController.resetSystem); // Demo only
@@ -60,13 +102,18 @@ const {
 } = process.env;
 
 // Enforce Mode Defaults
-const CURRENT_MODE = (TRADING_MODE || 'PAPER').toUpperCase();
+const savedState = systemState.getState();
+const CURRENT_MODE = (process.env.TRADING_MODE || 'PAPER').toUpperCase();
 console.log(`🛡️ SYSTEM STARTING IN MODE: [ ${CURRENT_MODE} ]`);
 
-let smartApi;
-let wsClient;
-let feedToken;
-let jwtToken;
+let smartApi: any;
+let wsClient: any;
+let feedToken: any;
+let jwtToken: any;
+let orderService: OrderService | null = null;
+
+// Candle Finalization Service (15m default)
+const candleService = new CandleFinalizationService('15m');
 
 /* ───────── HELPERS ───────── */
 function isMarketOpen() {
@@ -90,18 +137,18 @@ async function initAngel() {
         console.log('📋 API Key:', ANGEL_API_KEY ? `${ANGEL_API_KEY.substring(0, 4)}****` : 'MISSING');
         console.log('📋 Client Code:', ANGEL_CLIENT_CODE);
 
-        smartApi = new SmartAPI({ api_key: ANGEL_API_KEY });
+        smartApi = new SmartAPI({ api_key: ANGEL_API_KEY as string });
 
         // Generate TOTP
         const { authenticator } = await import('@otplib/preset-default');
-        const totp = authenticator.generate(ANGEL_TOTP_KEY);
+        const totp = authenticator.generate(ANGEL_TOTP_KEY as string);
 
         console.log('🔐 TOTP generated:', totp);
         console.log('🔄 Calling generateSession...');
 
         const session = await smartApi.generateSession(
-            ANGEL_CLIENT_CODE,
-            ANGEL_PASSWORD,
+            ANGEL_CLIENT_CODE as string,
+            ANGEL_PASSWORD as string,
             totp
         );
 
@@ -110,6 +157,12 @@ async function initAngel() {
         if (session.status && session.data) {
             feedToken = session.data.feedToken;
             jwtToken = session.data.jwtToken;
+
+            // 🚀 Initialize Production Services
+            orderService = new OrderService(smartApi);
+            setOrderService(orderService);
+            (global as any).smartApiInitialized = true;
+
             console.log('✅ Angel One Logged In Successfully');
             console.log('🎫 Feed Token:', feedToken ? 'Received' : 'Missing');
             console.log('🔑 JWT Token:', jwtToken ? 'Received' : 'Missing');
@@ -139,8 +192,26 @@ initAngel();
 const wss = new WebSocket.Server({ port: 3001 });
 const clients = new Set();
 
-wss.on("connection", ws => {
-    console.log('👤 Frontend client connected');
+wss.on("connection", (ws, req) => {
+    // 🔒 WS Auth Check
+    const cookies = cookie.parse(req.headers.cookie || '');
+    const token = cookies.auth_token;
+
+    if (!token) {
+        console.warn('🔞 Unauthorized WS connection attempt rejected');
+        ws.close(4001, 'Unauthorized');
+        return;
+    }
+
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+        console.warn('🔞 Invalid WS token rejected');
+        ws.close(4001, 'Invalid Token');
+        return;
+    }
+
+    console.log('👤 Authenticated Frontend client connected');
     clients.add(ws);
 
     // Send market status on connect
@@ -160,9 +231,9 @@ setInterval(() => {
     broadcast({ type: 'PING', timestamp: Date.now() });
 }, 30000);
 
-function broadcast(data) {
+function broadcast(data: any) {
     const message = JSON.stringify(data);
-    clients.forEach(c => {
+    clients.forEach((c: any) => {
         if (c.readyState === WebSocket.OPEN) {
             c.send(message);
         }
@@ -175,16 +246,17 @@ console.log('🌐 Frontend WebSocket server running on port 3001');
 function initWS() {
     try {
         wsClient = new WebSocketV2({
-            jwttoken: jwtToken,
-            apikey: ANGEL_API_KEY,
-            clientcode: ANGEL_CLIENT_CODE,
-            feedtype: feedToken,
+            jwttoken: jwtToken as string,
+            apikey: ANGEL_API_KEY as string,
+            clientcode: ANGEL_CLIENT_CODE as string,
+            feedtype: feedToken as string,
         });
 
         wsClient.connect().then(() => {
             console.log('✅ Angel One WebSocket connected');
+            (global as any).wsClientConnected = true;
 
-            // Subscribe to CRUDEOIL 19 FEB 2026 Futures using fetchData (V2 protocol)
+            // Subscribe to CRUDEOIL 19 FEB 2026
             wsClient.fetchData({
                 correlationId: "crude_live",
                 action: 1, // Subscribe
@@ -193,20 +265,56 @@ function initWS() {
                 tokens: ["467013"] // CRUDEOIL 19 FEB 2026
             });
 
-            wsClient.on("tick", tick => {
+            wsClient.on("tick", (tick: any) => {
                 const ltp = tick.last_traded_price / 100; // Adjust divisor if needed
 
+                // Process tick through candle finalization service
+                const result = candleService.processTick({
+                    price: Math.round(ltp),
+                    volume: tick.volume_trade_for_the_day || 0,
+                    time: Math.floor(Date.now() / 1000)
+                });
+
+                // Track latency
+                if (tick.exchange_timestamp) {
+                    const delay = Date.now() - tick.exchange_timestamp;
+                    HealthService.setLatency(delay);
+                }
+
+                // Broadcast price update
                 broadcast({
                     type: "PRICE_UPDATE",
                     data: {
                         price: Math.round(ltp),
                         volume: tick.volume_trade_for_the_day,
-                        timestamp: Date.now(),
                         time: Math.floor(Date.now() / 1000)
                     }
                 });
+
+                // Broadcast candle update
+                broadcast({
+                    type: "CANDLE_UPDATE",
+                    data: {
+                        confirmedCandles: result.confirmedCandles,
+                        liveCandle: result.liveCandle,
+                        newCandleFormed: result.newCandleFormed
+                    }
+                });
+
+                // Broadcast strategy update if confirmed
+                if (result.newCandleFormed && result.lastConfirmed) {
+                    strategyEngine.processNewCandle(candleService.getTimeframe(), result.lastConfirmed);
+
+                    // Trigger analysis
+                    strategyEngine.runAnalysis().then(analysis => {
+                        broadcast({
+                            type: "STRATEGY_UPDATE",
+                            data: analysis
+                        });
+                    });
+                }
             });
-        }).catch(err => {
+        }).catch((err: any) => {
             console.error('❌ Angel One WebSocket Error:', err);
         });
     } catch (error) {
@@ -214,8 +322,8 @@ function initWS() {
     }
 }
 
-/* ───────── HISTORICAL CANDLES ───────── */
-app.get("/api/candles", async (req, res) => {
+/* ───────── HISTORICAL CANDLES (PROTECTED) ───────── */
+app.get("/api/candles", authMiddleware, async (req, res) => {
     try {
         console.log('\n🔍 ===== CANDLES API REQUEST =====');
 
@@ -296,6 +404,10 @@ app.get("/api/candles", async (req, res) => {
             console.log('✅ Formatted', formattedCandles.length, 'candles');
             console.log('📊 Sample Formatted Candle:', formattedCandles[0]);
 
+            // Initialize candle finalization service with historical data
+            candleService.initializeHistory(formattedCandles);
+            console.log('✅ Candle finalization service initialized with historical data');
+
             res.json({
                 candles: formattedCandles,
                 contract: 'CRUDEOIL 19 FEB 2026',
@@ -325,16 +437,16 @@ app.get("/api/candles", async (req, res) => {
     }
 });
 
-/* ───────── MARKET STATUS ───────── */
-app.get("/api/market/status", (req, res) => {
+/* ───────── MARKET STATUS (PROTECTED) ───────── */
+app.get("/api/market/status", authMiddleware, (req, res) => {
     res.json({
         isOpen: isMarketOpen(),
         timestamp: Date.now()
     });
 });
 
-/* ───────── ACTIVE CONTRACT ───────── */
-app.get("/api/contract/active", (req, res) => {
+/* ───────── ACTIVE CONTRACT (PROTECTED) ───────── */
+app.get("/api/contract/active", authMiddleware, (req, res) => {
     res.json({
         symbol: 'CRUDEOIL19FEB26',
         displayName: 'CRUDEOIL 19 FEB 2026',
@@ -344,10 +456,10 @@ app.get("/api/contract/active", (req, res) => {
     });
 });
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 
-/* ───────── INTENT FIREWALL (EXECUTION GUARD) ───────── */
-app.post("/api/trade", (req, res) => {
+/* ───────── INTENT FIREWALL (EXECUTION GUARD - PROTECTED) ───────── */
+app.post("/api/trade", authMiddleware, (req, res) => {
     console.log('\n🛡️ ===== INTENT FIREWALL ACTIVATED =====');
     const { symbol, side, type, quantity, score, timestamp, secret_token } = req.body;
 
@@ -423,6 +535,8 @@ app.post("/api/trade", (req, res) => {
 
     if (CURRENT_MODE === 'PAPER') {
         console.log('📝 PAPER MODE: Simulating execution internally.');
+        // In paper mode, we still use the OrderService if we want a local ledger, 
+        // but since we don't have a paper ledger DB yet, we just mock the success.
         setTimeout(() => {
             res.json({
                 status: 'EXECUTED_PAPER',
@@ -434,27 +548,42 @@ app.post("/api/trade", (req, res) => {
         return;
     }
 
-    if (CURRENT_MODE === 'ASSISTED') {
-        // In assisted mode, the user *already* confirmed via frontend.
-        // Effectively same as LIVE but requires that manual trigger we just received.
-        // We might verify "User Signature" here if we had one.
-        console.log('🤝 ASSISTED MODE: Executing real trade with user consent.');
-    }
-
     if (CURRENT_MODE === 'LIVE' || CURRENT_MODE === 'ASSISTED') {
-        console.log('🚀 LIVE EXECUTION: Sending to Angel One...');
-        // TODO: Uncomment when ready for real money
-        // await smartApi.placeOrder({...});
+        if (!orderService) {
+            return res.status(503).json({ status: 'ERROR', message: 'Order service not available' });
+        }
 
-        // Mocking live for now until smartApi is fully wired with real money constraints
-        setTimeout(() => {
+        console.log('🚀 LIVE EXECUTION: Sending to Angel One...');
+
+        // Find token for the symbol
+        const tokenMap: Record<string, string> = {
+            'CRUDEOILM': '467013', // Update this with real mapping logic in prod
+            'CRUDEOIL': '467013' // Same for now
+        };
+
+        const token = tokenMap[symbol] || '467013';
+
+        orderService.placeOrder({
+            symbol,
+            token,
+            exchange: 'MCX',
+            side: side as 'BUY' | 'SELL',
+            type: 'MARKET',
+            quantity: quantity || 1
+        }).then(result => {
             res.json({
-                status: 'EXECUTED_LIVE',
-                orderId: `LIVE-${Date.now()}`,
-                executionPrice: 6000 + Math.random() * 10,
-                timestamp: Date.now()
+                status: CURRENT_MODE === 'LIVE' ? 'EXECUTED_LIVE' : 'EXECUTED_ASSISTED',
+                orderId: result.orderId,
+                executionPrice: result.executionPrice,
+                timestamp: result.timestamp
             });
-        }, 500);
+        }).catch(err => {
+            res.status(500).json({
+                status: 'FAILED',
+                reason: 'BROKER_REJECTION',
+                message: err.message
+            });
+        });
         return;
     }
 });

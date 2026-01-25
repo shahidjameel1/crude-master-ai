@@ -46,7 +46,9 @@ function MTFSnapshot({ timeframe }: MTFSnapshotProps) {
 
         const loadData = async () => {
             try {
-                const response = await fetch(`http://localhost:3002/api/candles?timeframe=${timeframe}`);
+                const response = await fetch(`/api/candles?timeframe=${timeframe}`, {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 if (data.candles && seriesRef.current) {
                     seriesRef.current.setData(data.candles);

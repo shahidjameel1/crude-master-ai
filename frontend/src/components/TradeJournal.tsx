@@ -30,7 +30,8 @@ export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
             </div>
 
             <div className="flex-1 overflow-auto pr-2 custom-scrollbar">
-                <table className="w-full text-xs text-left border-collapse">
+                {/* Desktop Table */}
+                <table className="w-full text-xs text-left border-collapse hidden md:table">
                     <thead className="text-neutral-500 sticky top-0 bg-neutral-900/90 backdrop-blur z-10">
                         <tr>
                             <th className="font-medium p-2 border-b border-white/5">Time</th>
@@ -53,14 +54,41 @@ export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
                                 <td className="p-2 text-neutral-300">{trade.entry}</td>
                                 <td className="p-2 text-neutral-300">{trade.exit}</td>
                                 <td className="p-2 text-right font-medium">
-                                    <span className={trade.pl > 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                                        {trade.pl > 0 ? '+' : ''}{trade.pl}
+                                    <span className={trade.pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                        {trade.pl >= 0 ? '+' : ''}{trade.pl}
                                     </span>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+
+                {/* Mobile Cards */}
+                <div className="flex flex-col gap-3 md:hidden">
+                    {trades.map(trade => (
+                        <div key={trade.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex flex-col gap-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-neutral-500 font-mono">{trade.time}</span>
+                                <span className={`flex items-center gap-1 font-bold text-xs ${trade.type === 'LONG' ? 'text-primary' : 'text-rose-500'}`}>
+                                    {trade.type === 'LONG' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                    {trade.type}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center bg-black/20 p-2 rounded-lg">
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] uppercase text-neutral-500">Entry</span>
+                                    <span className="text-xs font-bold text-white font-mono">{trade.entry}</span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[8px] uppercase text-neutral-500">P&L</span>
+                                    <span className={`text-xs font-bold font-mono ${trade.pl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {trade.pl >= 0 ? '+' : ''}{trade.pl}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

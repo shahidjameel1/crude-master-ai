@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  
+  evolutionLogs  EvolutionLog[]
+  sessionRatings SessionRating[]
+  regimeStates   RegimeState[]
+}
+
+model EvolutionLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  confirmation String   // e.g., "Momentum", "Structure"
+  oldWeight    Float
+  newWeight    Float
+  reason       String
+  sampleSize   Int
+  timestamp    DateTime @default(now())
+}
+
+model SessionRating {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sessionDate      DateTime
+  overallScore     Int      // 0-100
+  discipline       Int      // 0-100
+  patience         Int      // 0-100
+  signalQuality    Int      // 0-100
+  executionTiming  Int      // 0-100
+  riskAdherence    Int      // 0-100
+  explanation      String
+  createdAt        DateTime @default(now())
+}
+
+model RegimeState {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  isNoTradeMode Boolean
+  reason        String
+  detectedAt    DateTime?
+  updatedAt     DateTime  @updatedAt
+}

@@ -13,10 +13,11 @@ export function ControlPanel() {
     // API handlers (mocked for now, replace with store actions)
     const toggleGlassMode = async () => {
         try {
-            await fetch('http://localhost:3000/api/security/glass-mode', {
+            await fetch('/api/security/glass-mode', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: !glassMode })
+                body: JSON.stringify({ enabled: !glassMode }),
+                credentials: 'include'
             });
             setGlassMode(!glassMode);
         } catch (e) {
@@ -27,7 +28,10 @@ export function ControlPanel() {
     const activateKillSwitch = async () => {
         if (!confirm("⚠️ ACTIVATE EMERGENCY KILL SWITCH? This will close all positions and lock the system.")) return;
         try {
-            await fetch('http://localhost:3000/api/security/kill', { method: 'POST' });
+            await fetch('/api/security/kill', {
+                method: 'POST',
+                credentials: 'include'
+            });
             setAutomationMode('OFF');
             alert("SYSTEM LOCKED. RED ALERT.");
         } catch (e) {

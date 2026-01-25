@@ -1,7 +1,7 @@
 // Shared Types for CRUDE-MASTER AI
 
 export interface Candle {
-    timestamp: Date;
+    time: number; // Unix timestamp in seconds
     open: number;
     high: number;
     low: number;
@@ -11,14 +11,24 @@ export interface Candle {
 
 export interface MarketData {
     symbol: string;
-    timeframe: string;
+    interval: string;
     candles: Candle[];
     lastUpdate: Date;
 }
 
 export enum OrderDirection {
-    LONG = 'LONG',
-    SHORT = 'SHORT'
+    LONG = 'BUY',
+    SHORT = 'SELL'
+}
+
+export enum OrderSide {
+    BUY = 'BUY',
+    SELL = 'SELL'
+}
+
+export enum OrderType {
+    MARKET = 'MARKET',
+    LIMIT = 'LIMIT'
 }
 
 export enum OrderStatus {

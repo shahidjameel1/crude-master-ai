@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { TopBar } from './components/TopBar';
+import { GlobalCommandBar } from './components/GlobalCommandBar';
+import { MarketStatusStrip } from './components/MarketStatusStrip';
 import { LeftControlPanel } from './components/LeftControlPanel';
 import { ExecutionBottomBar } from './components/ExecutionBottomBar';
 import { ContinuousChart } from './components/ContinuousChart';
 import { Background3D } from './components/Background3D';
-import { PLDashboard } from './components/PLDashboard';
-import { PerformanceDashboard } from './components/PerformanceDashboard';
 import { TradeJournal } from './components/TradeJournal';
+import { PerformanceDashboard } from './components/PerformanceDashboard';
 import { StrategyCreatorWizard } from './components/StrategyCreatorWizard';
 import { OrderConfirmationModal } from './components/OrderConfirmationModal';
 import { NotificationToast } from './components/NotificationToast';
@@ -14,18 +14,46 @@ import { AdminPanel } from './components/AdminPanel';
 import { EconomicCalendar } from './components/EconomicCalendar';
 import { useStore } from './store/useStore';
 import { usePaperTrading } from './hooks/usePaperTrading';
+import { useDevice } from './hooks/useDevice';
+import { usePanicGesture } from './hooks/usePanicGesture';
+import { useConfidenceDecay } from './hooks/useConfidenceDecay';
+import { useStrategyEvolution } from './hooks/useStrategyEvolution';
+import { useRegimeDetection } from './hooks/useRegimeDetection';
+import { useSessionProfile } from './hooks/useSessionProfile';
+import { AuthOverlay } from './components/AuthOverlay';
+import { NotificationDrawer } from './components/NotificationDrawer';
+
+import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
     const {
-        is3DMode,
         activeTab,
         setUI,
         globalKillSwitch,
         triggerKillSwitch,
-        isStrategyCreatorOpen
+        isStrategyCreatorOpen,
+        isAuthenticated,
+        isAuthLoading,
+        setAuthenticated,
+        setAuthLoading,
+        isDrawerOpen
     } = useStore();
 
     const paperTrading = usePaperTrading();
+    const device = useDevice();
+    usePanicGesture(); // Activates global 3-tap kill switch
+    useConfidenceDecay(); // Activates confidence decay engine
+    useStrategyEvolution(); // Activates strategy evolution
+    useRegimeDetection(); // Activates regime detection
+    useSessionProfile(); // Activates session-specific behavior
+
+    // Synchronize device state with store
+    useEffect(() => {
+        setUI({
+            deviceType: device.deviceType,
+            orientation: device.orientation
+        });
+    }, [device.deviceType, device.orientation, setUI]);
 
     // Key Handler: Kill Switch (ESC)
     useEffect(() => {
@@ -38,6 +66,57 @@ function App() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [globalKillSwitch, triggerKillSwitch]);
 
+    // Session Verification
+    useEffect(() => {
+        const verifySession = async () => {
+            try {
+                const response = await fetch('/api/auth/check', {
+                    credentials: 'include'
+                });
+                console.log(`🛡️ Session Verification: ${response.status}`);
+                if (response.ok) {
+                    setAuthenticated(true);
+                } else {
+                    setAuthenticated(false);
+                }
+            } catch (err) {
+                setAuthenticated(false);
+            } finally {
+                setAuthLoading(false);
+            }
+        };
+
+        verifySession();
+    }, [setAuthenticated, setAuthLoading]);
+
+    // Global 401 Interceptor
+    useEffect(() => {
+        const originalFetch = window.fetch;
+        window.fetch = async (...args) => {
+            const response = await originalFetch(...args);
+            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+
+            if (response.status === 401 && !url.includes('/api/auth/login')) {
+                setAuthenticated(false);
+            }
+            return response;
+        };
+        return () => { window.fetch = originalFetch; };
+    }, [setAuthenticated]);
+
+    if (isAuthLoading) {
+        return (
+            <div className="h-screen w-screen bg-[#02050A] flex flex-col items-center justify-center">
+                <div className="w-12 h-12 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4" />
+                <div className="text-[10px] font-black tracking-[0.3em] text-white/40 uppercase">Initialising Friday-X...</div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <AuthOverlay />;
+    }
+
     return (
         <div className="flex flex-col h-screen w-screen bg-[#02050A] text-white overflow-hidden font-sans select-none">
             {/* 3D Environmental Background */}
@@ -46,25 +125,54 @@ function App() {
             </div>
 
             {/* Top Bar - Command Center */}
-            <TopBar />
+            <GlobalCommandBar />
 
-            <div className="flex flex-1 min-h-0 relative z-10">
+            {/* Secondary Status Strip (Sticky) */}
+            <div className="pt-10 z-[80]"> {/* Pt-10 to account for fixed GlobalCommandBar */}
+                <MarketStatusStrip />
+            </div>
 
-                {/* Left Panel - Control & Strategy */}
-                <LeftControlPanel />
+            {/* Command Center Layout - Reactive to Device/Orientation */}
+            <div className={`flex flex-1 min-h-0 relative z-10 w-full ${device.isMobile && device.isPortrait ? 'flex-col' : 'flex-row'
+                }`}>
+
+                {/* Left Panel - Control & Strategy (Desktop) */}
+                <div className="hidden lg:block h-full z-20 relative">
+                    <LeftControlPanel />
+                </div>
+
+                {/* Mobile/Tablet Drawer */}
+                <AnimatePresence>
+                    {isDrawerOpen && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setUI({ isDrawerOpen: false })}
+                                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] lg:hidden"
+                            />
+                            <motion.div
+                                initial={{ x: '-100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '-100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="fixed inset-y-0 left-0 w-80 z-[160] bg-black lg:hidden overflow-y-auto"
+                            >
+                                <LeftControlPanel />
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
                 {/* Main Workspace - Chart + Tabs */}
-                <main className="flex-1 flex flex-col min-w-0 bg-black/20">
-
-                    <div className="flex-1 relative">
+                <main className="flex-1 flex flex-col min-w-0 bg-black/20 w-full relative">
+                    <div className="flex-1 relative overflow-hidden">
                         <div style={{ display: activeTab === 'REVIEW' ? 'block' : 'none', height: '100%' }}>
-                            <ContinuousChart
-                                paperTrading={paperTrading}
-                            />
+                            <ContinuousChart paperTrading={paperTrading} />
                         </div>
                         {activeTab === 'JOURNAL' && (
                             <div className="p-8 h-full overflow-y-auto">
-                                <h2 className="text-xl font-bold mb-4">Trade Journal & Evolution</h2>
                                 <TradeJournal trades={paperTrading.tradeHistory} />
                             </div>
                         )}
@@ -79,34 +187,6 @@ function App() {
                             </div>
                         )}
                     </div>
-
-                    {/* Bottom Status Ticker */}
-                    <div className="h-8 flex items-center px-4 bg-black/60 border-t border-white/5">
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-white/30 uppercase font-bold">Latency</span>
-                                <span className="text-[9px] font-mono text-accent">14ms</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-white/30 uppercase font-bold">Protocol</span>
-                                <span className="text-[9px] font-mono text-white/60">GMD_V4.2</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-white/30 uppercase font-bold">Risk Status</span>
-                                <span className="text-[9px] font-mono text-green-500 uppercase">Gated</span>
-                            </div>
-                        </div>
-
-                        <div className="ml-auto flex items-center gap-4">
-                            <button
-                                onClick={() => setUI({ is3DMode: !is3DMode })}
-                                className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border transition-all ${is3DMode ? 'bg-accent text-white border-accent' : 'text-white/20 border-white/10 hover:border-white/20'}`}
-                            >
-                                {is3DMode ? '3D Active' : '3D Dormant'}
-                            </button>
-                            <PLDashboard tradeHistory={paperTrading.tradeHistory} />
-                        </div>
-                    </div>
                 </main>
 
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/80 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl z-50">
@@ -116,7 +196,8 @@ function App() {
                             onClick={() => setUI({ activeTab: tab as any })}
                             className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase transition-all ${activeTab === tab
                                 ? 'bg-accent text-white shadow-blue-glow'
-                                : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                                : 'text-white/40 hover:text-white hover:bg-white/5'
+                                }`}
                         >
                             {tab}
                         </button>
@@ -127,39 +208,28 @@ function App() {
             {/* Bottom Bar - Execution & Logs */}
             <ExecutionBottomBar />
 
-            {/* Strategy Creator Wizard */}
+            {/* Pop-up Modals & Overlays */}
             <StrategyCreatorWizard
                 isOpen={isStrategyCreatorOpen}
                 onClose={() => setUI({ isStrategyCreatorOpen: false })}
             />
-
-            {/* Order Confirmation Firewall */}
             <OrderConfirmationModal />
-
-            {/* Global Notifications */}
             <NotificationToast />
-
-            {/* Admin Interface */}
+            <NotificationDrawer />
             <AdminPanel />
 
             {/* Global Kill Switch Overlay */}
             {globalKillSwitch && (
-                <div className="fixed inset-0 z-[1000] bg-red-900/40 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in-95">
+                <div className="fixed inset-0 z-[1000] bg-red-900/40 backdrop-blur-md flex flex-col items-center justify-center">
                     <div className="flex flex-col items-center gap-4 p-12 bg-black rounded-3xl border-2 border-red-500 shadow-red-glow max-w-lg text-center">
                         <div className="w-20 h-20 rounded-full border-4 border-red-500 flex items-center justify-center animate-pulse">
-                            <span className="text-4xl">🛑</span>
+                            <span className="text-4xl text-white">🛑</span>
                         </div>
                         <h2 className="text-3xl font-black text-white uppercase tracking-tighter">System Terminated</h2>
                         <p className="text-red-500/80 font-mono text-sm uppercase tracking-widest">
                             Global Kill Switch has been activated.<br />
                             All automation has been physically severed.
                         </p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="mt-6 px-8 py-3 bg-red-500 text-white font-black uppercase text-xs rounded-xl hover:bg-red-600 transition-all active:scale-95"
-                        >
-                            Emergency Restart
-                        </button>
                     </div>
                 </div>
             )}

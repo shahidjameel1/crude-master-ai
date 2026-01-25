@@ -13,8 +13,14 @@
     "dependencies": {
         "@otplib/preset-default": "^12.0.1",
         "@supabase/supabase-js": "^2.38.4",
+        "@types/bcryptjs": "^2.4.6",
+        "@types/cookie-parser": "^1.4.10",
+        "@types/jsonwebtoken": "^9.0.10",
         "axios": "^1.6.2",
+        "bcryptjs": "^3.0.3",
         "body-parser": "^1.20.4",
+        "cookie": "^0.7.2",
+        "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "crypto-js": "^4.2.0",
         "dotenv": "^16.6.1",
@@ -22,6 +28,7 @@
         "express-rate-limit": "^8.2.1",
         "helmet": "^8.1.0",
         "hpp": "^0.2.3",
+        "jsonwebtoken": "^9.0.3",
         "node-cron": "^3.0.3",
         "otplib": "^13.1.0",
         "smartapi-javascript": "^1.0.27",
@@ -31,6 +38,7 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
+        "@types/cookie": "^0.6.0",
         "@types/cors": "^2.8.17",
         "@types/crypto-js": "^4.2.1",
         "@types/express": "^4.17.21",

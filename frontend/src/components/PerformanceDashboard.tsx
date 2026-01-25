@@ -24,52 +24,51 @@ export function PerformanceDashboard() {
     }, [tradeHistory]);
 
     return (
-        <div className="flex flex-col gap-6 p-6 bg-black/60 backdrop-blur-3xl border border-white/5 rounded-3xl h-full overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 bg-black/60 backdrop-blur-3xl border border-white/5 md:rounded-3xl h-full overflow-y-auto custom-scrollbar">
 
             {/* Top Stats Bar */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <StatCard
                     label="Portfolio Equity"
                     value={`₹${(accountSize + stats.totalPnL).toLocaleString()}`}
-                    sub={`${stats.totalPnL >= 0 ? '+' : ''}₹${stats.totalPnL.toLocaleString()} Net P&L`}
+                    sub={`${stats.totalPnL >= 0 ? '+' : ''}₹${stats.totalPnL.toLocaleString()}`}
                     icon={<TrendingUp className="text-accent" size={16} />}
                 />
                 <StatCard
                     label="Win Rate"
                     value={`${stats.winRate.toFixed(1)}%`}
-                    sub={`${stats.totalTrades} Total Trades`}
+                    sub={`${stats.totalTrades} Trades`}
                     icon={<Award className="text-green-400" size={16} />}
                 />
                 <StatCard
-                    label="Avg R-Multiple"
+                    label="Avg R-Mult"
                     value={`${stats.avgR}R`}
-                    sub="Risk-Reward Efficiency"
+                    sub="Efficiency"
                     icon={<BarChart3 className="text-indigo-400" size={16} />}
                 />
                 <StatCard
-                    label="Discipline Score"
+                    label="Discipline"
                     value={`${Math.max(0, 100 - (stats.violations * 10))}%`}
-                    sub={`${stats.violations} Rule Breaches`}
+                    sub={`${stats.violations} Breaches`}
                     icon={<AlertTriangle className={stats.violations > 0 ? 'text-red-500 animate-pulse' : 'text-white/20'} size={16} />}
                 />
             </div>
 
-            <div className="grid grid-cols-3 gap-6 flex-1">
-                {/* Equity Curve Placeholder (Simplified) */}
-                <div className="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 flex-wrap lg:flex-nowrap">
+                {/* Equity Curve Placeholder */}
+                <div className="lg:col-span-2 bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4 min-h-[200px]">
                     <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Equity Growth Curve</span>
-                        <div className="flex gap-2">
-                            {['1D', '1W', '1M', 'ALL'].map(t => (
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Equity Growth Cycle</span>
+                        <div className="flex gap-1 md:gap-2">
+                            {['1D', '1W', 'ALL'].map(t => (
                                 <button key={t} className="px-2 py-0.5 rounded text-[8px] bg-white/5 text-white/40 hover:bg-white/10">{t}</button>
                             ))}
                         </div>
                     </div>
-                    <div className="flex-1 flex items-end gap-1 px-2 pb-4">
-                        {/* Mock bars for equity curve if no data */}
+                    <div className="flex-1 flex items-end gap-1 px-1 pb-2 md:px-2 md:pb-4">
                         {equityCurve.length < 2 ? (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-white/10 uppercase tracking-[0.3em] font-black italic">
-                                Awaiting Execution Telemetry...
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-white/10 uppercase tracking-[0.3em] font-black italic text-center p-4">
+                                Waiting for Telemetry...
                             </div>
                         ) : (
                             equityCurve.map((point, i) => (
@@ -84,25 +83,26 @@ export function PerformanceDashboard() {
                     </div>
                 </div>
 
-                {/* Performance Calendar Heatmap Placeholder */}
+                {/* Performance Calendar Heatmap */}
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">P&L Heatmap</span>
+                    <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">P&L Thermal Map</span>
                     <div className="grid grid-cols-7 gap-1">
-                        {Array.from({ length: 35 }).map((_, i) => (
+                        {Array.from({ length: 28 }).map((_, i) => (
                             <div key={i} className={`aspect-square rounded-sm border border-white/5 ${i === 12 ? 'bg-green-500/40' : i === 15 ? 'bg-red-500/40' : 'bg-white/5'}`} />
                         ))}
                     </div>
                     <div className="flex justify-between text-[8px] text-white/20 uppercase font-black">
-                        <span>Mon</span>
-                        <span>Fri</span>
+                        <span>Past 4 Weeks</span>
                     </div>
                 </div>
             </div>
 
             {/* Trade History Table */}
-            <div className="flex-1 min-h-0 bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Recent Executions</span>
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-[300px] bg-white/5 border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Execution Stream</span>
+
+                {/* Desktop View */}
+                <div className="hidden lg:block flex-1 overflow-y-auto custom-scrollbar">
                     <table className="w-full text-left">
                         <thead className="text-[8px] text-white/20 uppercase font-black border-b border-white/5">
                             <tr>
@@ -132,7 +132,7 @@ export function PerformanceDashboard() {
                                             </span>
                                         </td>
                                         <td className="py-3 text-white/60">₹{trade.entryPrice.toLocaleString()}</td>
-                                        <td className="py-3 text-white/60">₹{trade.exitPrice.toLocaleString()}</td>
+                                        <td className="py-3 text-white/60">₹{trade.exitPrice?.toLocaleString() || '-'}</td>
                                         <td className="py-3 text-accent font-black">{trade.rMultiple}R</td>
                                         <td className={`py-3 text-right font-black ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                             {trade.pnl >= 0 ? '+' : ''}₹{trade.pnl.toLocaleString()}
@@ -142,6 +142,36 @@ export function PerformanceDashboard() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="lg:hidden flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1">
+                    {tradeHistory.length === 0 ? (
+                        <div className="py-8 text-center text-white/10 text-[10px] uppercase tracking-[0.2em] italic">No archived trades found.</div>
+                    ) : (
+                        tradeHistory.slice(-10).reverse().map(trade => (
+                            <div key={trade.id} className="p-3 bg-white/5 rounded-xl border border-white/5 flex flex-col gap-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[8px] text-white/40 font-mono italic">{new Date(trade.timestamp).toLocaleTimeString()}</span>
+                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${trade.side === 'BUY' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                        {trade.side}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center px-1">
+                                    <div className="flex flex-col">
+                                        <span className="text-[7px] text-white/20 uppercase font-black">Result</span>
+                                        <span className={`text-[11px] font-black ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            {trade.pnl >= 0 ? '+' : ''}₹{trade.pnl.toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[7px] text-white/20 uppercase font-black">Efficiency</span>
+                                        <span className="text-[11px] font-black text-accent">{trade.rMultiple}R</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>

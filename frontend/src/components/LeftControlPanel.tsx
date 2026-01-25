@@ -1,18 +1,19 @@
 import { useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Layers, Target, Info, TrendingUp, Plus } from 'lucide-react';
 import { RiskCalculator } from './RiskCalculator';
 import { AutomationDashboard } from './AutomationDashboard';
 import { useAutomationEngine } from '../hooks/useAutomationEngine';
 import { usePaperTrading } from '../hooks/usePaperTrading';
+import { ReasoningTimeline } from './ReasoningTimeline';
+import { ConfidenceMeter } from './ConfidenceMeter';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 export function LeftControlPanel() {
     const {
         strategies,
         toggleStrategy,
         updateStrategyWeight,
-        breakdown,
         confluenceScore,
         currentPrice,
         activeView,
@@ -54,6 +55,9 @@ export function LeftControlPanel() {
     return (
         <div className="w-80 h-full flex-shrink-0 flex flex-col gap-4 p-4 bg-black/40 border-r border-white/5 overflow-y-auto custom-scrollbar overflow-x-hidden">
 
+            {/* Confidence Meter (High Priority) */}
+            <ConfidenceMeter />
+
             {/* Strategy Stack */}
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between px-1 mb-1">
@@ -79,33 +83,9 @@ export function LeftControlPanel() {
                 ))}
             </div>
 
-            {/* Confluence breakdown */}
-            <div className="flex flex-col gap-3 bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                        <TrendingUp size={14} className="text-accent" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Live Breakdown</span>
-                    </div>
-                    <span className={`text-xs font-black ${confluenceScore >= 80 ? 'text-green-400' : 'text-white/40'}`}>
-                        {confluenceScore}
-                    </span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <BreakdownRow label="VWAP Alignment" value={breakdown.vwapAlignment} max={25} />
-                    <BreakdownRow label="EMA Trend flow" value={breakdown.emaTrend} max={20} />
-                    <BreakdownRow label="Location Zone" value={breakdown.locationZone} max={15} />
-                    <BreakdownRow label="RSI Momentum" value={breakdown.rsiMomentum} max={15} />
-                    <BreakdownRow label="ICT Structure" value={breakdown.ictStructure} max={15} advisory />
-                    <BreakdownRow label="SMT Diversion" value={breakdown.smtConfirmation} max={10} advisory />
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-white/5 flex items-start gap-2">
-                    <Info size={12} className="text-white/20 mt-0.5" />
-                    <p className="text-[8px] text-white/40 uppercase tracking-tight leading-normal font-mono">
-                        Hover breakdown items to highlight relevant chart levels. ICT & SMT are advisory components.
-                    </p>
-                </div>
+            {/* Reasoning Timeline (Transparency) */}
+            <div className="flex-1 min-h-[200px] flex flex-col">
+                <ReasoningTimeline />
             </div>
 
             {/* Position Sizing Hub */}
@@ -165,13 +145,13 @@ function StrategyCard({ strategy, onToggle, onWeightChange }: {
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
             className={`p-3 rounded-xl border transition-all relative overflow-hidden ${strategy.enabled
-                ? 'bg-accent/5 border-accent/20 cursor-pointer'
-                : 'bg-white/2 border-white/5 opacity-40 grayscale'
+                    ? 'bg-accent/5 border-accent/20 cursor-pointer'
+                    : 'bg-white/2 border-white/5 opacity-40 grayscale'
                 }`}
         >
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${strategy.enabled ? 'bg-accent animate-pulse' : 'bg-white/20'}`} />
+                    <div className={`w - 1.5 h - 1.5 rounded - full ${strategy.enabled ? 'bg-accent animate-pulse' : 'bg-white/20'} `} />
                     <span className="text-[10px] font-black text-white uppercase tracking-tighter">{strategy.name}</span>
                 </div>
                 <input
@@ -200,24 +180,3 @@ function StrategyCard({ strategy, onToggle, onWeightChange }: {
     );
 }
 
-function BreakdownRow({ label, value, max, advisory = false }: { label: string, value: number, max: number, advisory?: boolean }) {
-    const percentage = (value / max) * 100;
-
-    return (
-        <div className="flex flex-col gap-1.5 group cursor-pointer">
-            <div className="flex justify-between items-center text-[9px] font-bold">
-                <span className={`uppercase tracking-tighter transition-colors ${advisory ? 'text-white/30' : 'text-white/60 group-hover:text-accent'}`}>
-                    {label} {advisory && <span className="text-[7px] border border-white/10 px-1 rounded ml-1 opacity-60">ADV</span>}
-                </span>
-                <span className={`font-mono ${value > 0 ? 'text-white' : 'text-white/20'}`}>+{value}</span>
-            </div>
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    className={`h-full ${advisory ? 'bg-white/20' : 'bg-accent'} rounded-full`}
-                />
-            </div>
-        </div>
-    );
-}

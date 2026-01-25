@@ -1,9 +1,22 @@
 import { Request, Response } from 'express';
 import { OperationalMode, Heartbeat } from '../types';
+import { HealthService } from '../services/HealthService';
+import { OrderService } from '../services/OrderService';
+import { systemState } from '../services/SystemStateService';
+
+// To be injected from server.ts
+let orderService: OrderService | null = null;
+
+export function setOrderService(service: OrderService) {
+    orderService = service;
+}
 
 // Simple in-memory storage for this session
 // In production, this might sync with a database (SystemState table)
-let currentMode: OperationalMode = OperationalMode.NORMAL;
+// Load initial state from persistent service
+let currentMode: OperationalMode = systemState.getState().globalKillSwitch
+    ? OperationalMode.EMERGENCY_LOCK
+    : OperationalMode.NORMAL;
 
 export class SecurityController {
     /**
@@ -47,19 +60,22 @@ export class SecurityController {
      * Endpoint: Emergency Kill Switch
      * Stops all trading immediately and locks the system.
      */
-    static emergencyKill(req: Request, res: Response) {
+    static async emergencyKill(req: Request, res: Response) {
         currentMode = OperationalMode.EMERGENCY_LOCK;
+        systemState.updateState({ globalKillSwitch: true, automationMode: 'OFF' });
+
         console.log('🚨 EMERGENCY KILL SWITCH ACTIVATED');
 
-        // TODO: In a real integration, this would:
-        // 1. Call Broker API to Cancel All Orders
-        // 2. Call Broker API to Square Off All Positions
-        // 3. Persist state to DB
+        let squareOffData = { total: 0, squared: 0 };
+        if (orderService) {
+            squareOffData = await orderService.squareOffAll();
+        }
 
         res.json({
             mode: currentMode,
             status: 'STOPPED',
-            message: 'System locked. All operations halted.'
+            message: 'System locked. All operations halted.',
+            squareOff: squareOffData
         });
     }
 
@@ -67,27 +83,26 @@ export class SecurityController {
      * Endpoint: System Heartbeat
      * Returns health status of the system
      */
-    static heartbeat(req: Request, res: Response) {
+    static async heartbeat(req: Request, res: Response) {
+        const metrics = HealthService.getMetrics();
+        const connections = await HealthService.checkConnectivity();
+
         const heartbeat: Heartbeat = {
-            timestamp: new Date(),
-            status: currentMode === OperationalMode.EMERGENCY_LOCK ? 'DOWN' : 'OK',
-            latencyMs: Math.floor(Math.random() * 20) + 10, // Mock latency
-            services: {
-                database: true, // Mock status
-                broker: true,   // Mock status
-                feed: true      // Mock status
-            }
+            timestamp: metrics.timestamp,
+            status: (currentMode === OperationalMode.EMERGENCY_LOCK || !connections.broker) ? 'DOWN' : 'OK',
+            latencyMs: metrics.latencyMs,
+            services: connections
         };
 
         res.json(heartbeat);
     }
 
     /**
-     * Endpoint: Reset System (Requires strict auth in prod)
+     * Endpoint: Reset System (Owner Only)
      */
     static resetSystem(req: Request, res: Response) {
-        // Simple unlock for demo purposes
         currentMode = OperationalMode.NORMAL;
+        systemState.updateState({ globalKillSwitch: false });
         console.log('✅ System Reset to NORMAL mode');
         res.json({ mode: currentMode });
     }

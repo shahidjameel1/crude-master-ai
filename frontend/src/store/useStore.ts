@@ -6,6 +6,7 @@ import { CandlestickData } from 'lightweight-charts';
 export type MarketTrend = 'UP' | 'DOWN' | 'SIDEWAYS';
 export type AutomationMode = 'OFF' | 'ASSIST' | 'AUTO';
 export type AgentMode = 'OBSERVE' | 'SEARCH' | 'PREPARE' | 'STRIKE' | 'DEFENSIVE' | 'LOCKDOWN';
+export type AgentState = 'IDLE' | 'SEARCHING' | 'ANALYZING' | 'READY' | 'EXECUTING' | 'COOLDOWN' | 'ERROR';
 export type RiskStatus = 'SAFE' | 'RISKY';
 export type ContractSymbol = 'CRUDEOILM' | 'CRUDEOIL';
 
@@ -37,13 +38,22 @@ export interface Trade {
     strategyId: string;
     wasRuleViolation: boolean;
 }
+export interface ConfluenceFactors {
+    vwapAlignment: number; // Location Quality
+    emaTrend: number;      // Trend Context
+    structure: number;     // Structure & Liquidity
+    momentum: number;      // Momentum Confirmation
+    timing: number;        // Timing & Session
+    riskQuality: number;   // Risk Quality
+}
 
-vwapAlignment: number; // Location Quality
-emaTrend: number;      // Trend Context
-structure: number;     // Structure & Liquidity
-momentum: number;      // Momentum Confirmation
-timing: number;        // Timing & Session
-riskQuality: number;   // Risk Quality
+export interface ConfluenceBreakdown {
+    vwapAlignment: number;
+    emaTrend: number;
+    structure: number;
+    momentum: number;
+    timing: number;
+    riskQuality: number;
 }
 
 export interface TradeIntent {
@@ -72,11 +82,50 @@ export interface Drawing {
 }
 
 export interface CockpitState {
+    // Timeline Data
+    agentReasoning: { timestamp: number; state: string; reason: string; details?: string }[];
+    confidenceDetail: { score: number; breakdown: Record<string, number> };
+    checklistStatus: { passed: boolean; failedItems: string[] };
+
+    // Intelligence Features
+    tradeReplays: Array<{
+        tradeId: string;
+        entry: number;
+        exit: number;
+        result: 'WIN' | 'LOSS' | 'BREAKEVEN';
+        confidenceAtEntry: number;
+        strategyComponents: Record<string, number>;
+        marketCondition: string;
+        explanation: string;
+    }>;
+    patienceState: {
+        isActive: boolean;
+        cooldownUntil: number;
+        reason: string;
+        consecutiveLosses: number;
+    };
+    confidenceDecayState: {
+        isDecaying: boolean;
+        decayRate: number;
+        lastValidSetup: number;
+    };
+    strategyProfiles: Array<{
+        id: string;
+        name: string;
+        confidence: number;
+        winRate: number;
+        drawdown: number;
+        marketSuitability: string;
+    }>;
+    activeStrategyId: string;
+
     // Market State
     currentPrice: number;
     vwap: number;
     trend: MarketTrend;
-    candles: CandlestickData[];
+    candles: CandlestickData[]; // Legacy for backward compat
+    confirmedCandles: CandlestickData[];
+    liveCandle: CandlestickData | null;
     sessionHigh: number;
     sessionLow: number;
     volumeProfile: { price: number; volume: number; color: string }[];
@@ -105,6 +154,9 @@ export interface CockpitState {
     // Automation State
     automationMode: AutomationMode;
     agentMode: AgentMode;
+    agentState: AgentState;
+    agentReason: string;
+    lastAgentAction: number; // Timestamp
     opportunityScore: number;
     pointsToday: number;
     targetPoints: number;
@@ -124,7 +176,7 @@ export interface CockpitState {
     is3DMode: boolean;
     isInsightDrawerOpen: boolean;
     isStrategyCreatorOpen: boolean;
-    activeTab: 'REVIEW' | 'EVOLUTION' | 'SETTINGS' | 'JOURNAL' | 'PERFORMANCE' | 'CALENDAR';
+    activeTab: 'REVIEW' | 'EVOLUTION' | 'SETTINGS' | 'JOURNAL' | 'PERFORMANCE' | 'CALENDAR' | 'CALENDAR';
     activeTimeframe: string;
     systemLogs: string[];
     notifications: Notification[];
@@ -132,10 +184,27 @@ export interface CockpitState {
     drawings: Drawing[];
     activeDrawingTool: Drawing['type'] | null;
     rrVisualizer: { active: boolean; entry: number; sl: number; tp: number; side: 'BUY' | 'SELL' } | null;
+    isDrawerOpen: boolean;
+    isNotificationDrawerOpen: boolean;
+    chartStatus: 'LOADING' | 'READY' | 'ERROR';
+    deviceType: 'MOBILE' | 'TABLET' | 'DESKTOP';
+    orientation: 'PORTRAIT' | 'LANDSCAPE';
+
+    // Performance & Health
+    latencyMs: number;
+    protocolVersion: string;
+    brokerStatus: 'OK' | 'DOWN';
+    feedStatus: 'OK' | 'DOWN';
+    isMarketOpen: boolean;
+    marketSession: string;
+
+    // Auth State
+    isAuthenticated: boolean;
+    isAuthLoading: boolean;
 
     // Actions
     setMarketData: (data: Partial<CockpitState>) => void;
-    updatePrice: (price: number, vwap: number, candles: CandlestickData[]) => void;
+    updatePrice: (price: number, vwap: number) => void;
     toggleStrategy: (id: string) => void;
     updateStrategyWeight: (id: string, weight: number) => void;
     setAutomationMode: (mode: AutomationMode) => void;
@@ -154,17 +223,48 @@ export interface CockpitState {
     setDefaultTrade: (symbol: ContractSymbol) => void;
     updatePoints: (points: number) => void;
     setAgentMode: (mode: AgentMode) => void;
+    setAgentState: (state: AgentState, reason: string) => void;
     setSearchState: (zone: string | null, waitingFor: string | null) => void;
+
+    // Auth Actions
+    setAuthenticated: (val: boolean) => void;
+    setAuthLoading: (val: boolean) => void;
+
+    // Transparency Actions
+    addReasoningLog: (state: string, reason: string, details?: string) => void;
+    updateConfidence: (score: number, breakdown: Record<string, number>) => void;
+    updateChecklistStatus: (passed: boolean, failedItems: string[]) => void;
+
+    // Intelligence Actions
+    addTradeReplay: (replay: any) => void;
+    updatePatienceState: (state: Partial<CockpitState['patienceState']>) => void;
+    updateConfidenceDecay: (state: Partial<CockpitState['confidenceDecayState']>) => void;
+    addStrategyProfile: (profile: any) => void;
+    setActiveStrategy: (id: string) => void;
+
+    // Evolution Intelligence Actions
+    evolutionLog: Array<{ timestamp: number; confirmation: string; oldWeight: number; newWeight: number; reason: string }>;
+    sessionRatings: Array<{ sessionDate: number; overallScore: number; discipline: number; patience: number; signalQuality: number; executionTiming: number; riskAdherence: number; explanation: string }>;
+    regimeState: { isNoTradeMode: boolean; reason: string; detectedAt: number | null };
+    sessionProfile: 'ASIA' | 'LONDON' | 'NY';
+    addEvolutionLog: (log: any) => void;
+    addSessionRating: (rating: any) => void;
+    updateRegimeState: (state: Partial<CockpitState['regimeState']>) => void;
+    setSessionProfile: (profile: 'ASIA' | 'LONDON' | 'NY') => void;
 }
 
 // --- STORE ---
 
 export const useStore = create<CockpitState>((set, get) => ({
     // Initial State
+    isAuthenticated: false,
+    isAuthLoading: true,
     currentPrice: 0,
     vwap: 0,
     trend: 'SIDEWAYS',
     candles: [],
+    confirmedCandles: [],
+    liveCandle: null,
     sessionHigh: 0,
     sessionLow: 0,
     volumeProfile: [],
@@ -178,11 +278,18 @@ export const useStore = create<CockpitState>((set, get) => ({
         { id: 'timing', name: 'Timing', description: 'Session / Chop', enabled: true, weight: 10 }
     ],
     confluenceScore: 0,
+    breakdown: {
+        vwapAlignment: 0,
+        emaTrend: 0,
+        structure: 0,
+        momentum: 0,
+        timing: 0,
+        riskQuality: 0
+    },
     structure: 0,
     momentum: 0,
     timing: 0,
-    riskQuality: 0
-},
+    riskQuality: 0,
     confluenceReasons: [],
 
     riskStatus: 'SAFE',
@@ -197,19 +304,52 @@ export const useStore = create<CockpitState>((set, get) => ({
 
     automationMode: 'OFF',
     agentMode: 'SEARCH',
+    agentState: 'IDLE',
+    agentReason: 'Initialising Friday-X...',
+    lastAgentAction: Date.now(),
     opportunityScore: 0,
     pointsToday: 0,
     targetPoints: 50,
     stopLossPoints: -20,
     searchState: {
-    activeZone: null,
-    waitingFor: null
-},
+        activeZone: null,
+        waitingFor: null
+    },
     globalKillSwitch: false,
 
     isAdmin: true,
     isAdminPanelOpen: false,
     isCovertMode: false,
+
+    // Transparency State
+    agentReasoning: [],
+    confidenceDetail: { score: 0, breakdown: {} },
+    checklistStatus: { passed: true, failedItems: [] },
+
+    // Intelligence State
+    tradeReplays: [],
+    patienceState: {
+        isActive: false,
+        cooldownUntil: 0,
+        reason: '',
+        consecutiveLosses: 0
+    },
+    confidenceDecayState: {
+        isDecaying: false,
+        decayRate: 0,
+        lastValidSetup: Date.now()
+    },
+    strategyProfiles: [
+        { id: 'strategy-a', name: 'Strategy A', confidence: 0, winRate: 0, drawdown: 0, marketSuitability: 'Trending' },
+        { id: 'strategy-b', name: 'Strategy B', confidence: 0, winRate: 0, drawdown: 0, marketSuitability: 'Ranging' }
+    ],
+    activeStrategyId: 'strategy-a',
+
+    // Evolution Intelligence (Session-Scoped)
+    evolutionLog: [],
+    sessionRatings: [],
+    regimeState: { isNoTradeMode: false, reason: '', detectedAt: null },
+    sessionProfile: 'NY', // Default to New York session
 
     is3DMode: false,
     isInsightDrawerOpen: false,
@@ -223,131 +363,166 @@ export const useStore = create<CockpitState>((set, get) => ({
     activeDrawingTool: null,
     rrVisualizer: null,
 
+    isDrawerOpen: false,
+    isNotificationDrawerOpen: false,
+    chartStatus: 'LOADING',
+    deviceType: 'DESKTOP',
+    orientation: 'PORTRAIT',
+
+    latencyMs: 0,
+    protocolVersion: 'FRIDAY-X V1.0',
+    brokerStatus: 'OK',
+    feedStatus: 'OK',
+    isMarketOpen: false,
+    marketSession: 'MCX',
+
     activeView: 'CRUDEOILM',
     defaultTrade: 'CRUDEOILM',
     contracts: [
-    { symbol: 'CRUDEOILM', name: 'CRUDEOIL MINI', multiplier: 10, tickSize: 1, exchange: 'MCX' },
-    { symbol: 'CRUDEOIL', name: 'CRUDEOIL (BIG)', multiplier: 100, tickSize: 1, exchange: 'MCX' }
-],
+        { symbol: 'CRUDEOILM', name: 'CRUDEOIL MINI', multiplier: 10, tickSize: 1, exchange: 'MCX' },
+        { symbol: 'CRUDEOIL', name: 'CRUDEOIL (BIG)', multiplier: 100, tickSize: 1, exchange: 'MCX' }
+    ],
 
     // Actions
-    setMarketData: (data) => set((state) => ({ ...state, ...data })),
-
-    updatePrice: (price, vwap, candles) => set((state) => {
-        const { strategies, sessionHigh, sessionLow } = get();
+    updatePrice: (price, vwap) => set((state) => {
         const trend = price > vwap ? 'UP' : 'DOWN';
 
-        const breakdownValues: ConfluenceBreakdown = {
-            vwapAlignment: 0,
-            emaTrend: 0,
-            structure: 0,
-            momentum: 0,
-            timing: 0,
-            riskQuality: 0
-        };
-        const reasons: string[] = [];
-
-        // 1. Location Quality (20) - VWAP & Zones
-        const locStrat = strategies.find(s => s.id === 'location');
-        if (locStrat?.enabled) {
-            if (price > vwap) { breakdownValues.vwapAlignment += 10; reasons.push("Loc: Above VWAP"); } // placeholder split
-            const range = sessionHigh - sessionLow;
-            if (range > 0 && price < sessionLow + (range * 0.4)) {
-                breakdownValues.vwapAlignment += 10;
-                reasons.push("Loc: Discount Zone");
-            }
-        }
-
-        // 2. Trend Context (20) - HTF & LTF
-        const trendStrat = strategies.find(s => s.id === 'trend');
-        if (trendStrat?.enabled && price > vwap) {
-            breakdownValues.emaTrend = trendStrat.weight; // Simplified placeholder
-            reasons.push("Trend: Bullish Context");
-        }
-
-        // 3. Structure (20)
-        const structStrat = strategies.find(s => s.id === 'structure');
-        if (structStrat?.enabled) {
-            // Mock structure logic
-            breakdownValues.structure = 0;
-        }
-
-        // 4. Momentum (15)
-        const momStrat = strategies.find(s => s.id === 'momentum');
-        if (momStrat?.enabled && price > vwap) {
-            breakdownValues.momentum = momStrat.weight;
-            reasons.push("Mom: Positive Impulse");
-        }
-
-        // 5. Risk Quality (15)
-        const riskStrat = strategies.find(s => s.id === 'risk');
-        if (riskStrat?.enabled) {
-            breakdownValues.riskQuality = riskStrat.weight; // Assume good risk for now
-            reasons.push("Risk: Clean R:R");
-        }
-
-        // 6. Timing (10)
-        const timingStrat = strategies.find(s => s.id === 'timing');
-        if (timingStrat?.enabled) {
-            const now = new Date();
-            const h = now.getHours();
-            if (h >= 14 && h <= 20) { // UK/US Session
-                breakdownValues.timing = timingStrat.weight;
-                reasons.push("Time: Active Session");
-            } else if (h >= 12 && h < 14) {
-                breakdownValues.timing = -10; // Lunch Chop Penalty
-                reasons.push("Time: LUNCH CHOP");
-            }
-        }
-
-        let score = Object.values(breakdownValues).reduce((a, b) => a + b, 0);
-        score = Math.max(0, Math.min(100, score)); // Clamp 0-100
-
-        // Master Logic: Determine Agent Mode based on score & points
-        let nextAgentMode: AgentMode = 'SEARCH'; // Default SEARCH (<75)
-        const points = get().pointsToday;
-        const target = get().targetPoints;
-        const stop = get().stopLossPoints;
-
-        if (points <= stop) {
-            nextAgentMode = 'LOCKDOWN';
-        } else if (points >= target) {
-            nextAgentMode = 'DEFENSIVE';
-        } else if (score >= 85) {
-            nextAgentMode = 'STRIKE';
-        } else if (score >= 75) {
-            nextAgentMode = 'PREPARE';
-        } else if (score >= 60) {
-            nextAgentMode = 'SEARCH'; // "WATCH/SEARCH"
-        } else {
-            nextAgentMode = 'OBSERVE'; // < 60
-        }
-
-        // Search State Logic
-        let searchZone: string | null = null;
-        let searchWait: string | null = null;
-
-        if (nextAgentMode === 'SEARCH' || nextAgentMode === 'PREPARE') {
-            searchZone = price < vwap ? "VWAP Discount" : "VWAP Premium";
-            searchWait = nextAgentMode === 'PREPARE' ? "ARMED: Awaiting Trigger" : "Monitoring Structure";
-        }
+        // Strategy logic removed from here as per safety rules.
+        // updatePrice now only handles real-time price/vwap tracking.
 
         return {
             ...state,
             currentPrice: price,
             vwap,
-            candles,
-            trend,
-            confluenceScore: score,
-            opportunityScore: score,
-            breakdown: breakdownValues,
-            confluenceReasons: reasons,
-            agentMode: nextAgentMode,
-            searchState: {
-                activeZone: searchZone,
-                waitingFor: searchWait
-            }
+            trend
         };
+    }),
+
+    // New action to process finalized candles and run strategy logic
+    setMarketData: (data) => set((state) => {
+        const newState = { ...state, ...data };
+
+        // If we are updating candles, recalculate strategy score based on CONFIRMED data only
+        if (data.confirmedCandles) {
+            const confirmedCandles = data.confirmedCandles as CandlestickData[];
+            if (confirmedCandles.length > 0) {
+                const lastConfirmed = confirmedCandles[confirmedCandles.length - 1];
+                const { strategies, sessionHigh, sessionLow } = newState;
+
+                const breakdownValues: ConfluenceBreakdown = {
+                    vwapAlignment: 0,
+                    emaTrend: 0,
+                    structure: 0,
+                    momentum: 0,
+                    timing: 0,
+                    riskQuality: 0
+                };
+                const reasons: string[] = [];
+
+                // 1. Location Quality - BASED ON CONFIRMED CLOSE
+                const locStrat = strategies.find(s => s.id === 'location');
+                if (locStrat?.enabled) {
+                    if (lastConfirmed.close > newState.vwap) {
+                        breakdownValues.vwapAlignment += 10;
+                        reasons.push("Loc: Above VWAP (Confirmed)");
+                    }
+                    const range = sessionHigh - sessionLow;
+                    if (range > 0 && lastConfirmed.close < sessionLow + (range * 0.4)) {
+                        breakdownValues.vwapAlignment += 10;
+                        reasons.push("Loc: Discount Zone (Confirmed)");
+                    }
+                }
+
+                // 2. Trend Context - BASED ON CONFIRMED CLOSE
+                const trendStrat = strategies.find(s => s.id === 'trend');
+                if (trendStrat?.enabled && lastConfirmed.close > newState.vwap) {
+                    breakdownValues.emaTrend = trendStrat.weight;
+                    reasons.push("Trend: Bullish Context (Confirmed)");
+                }
+
+                // 3. Momentum - BASED ON CONFIRMED CLOSE
+                const momStrat = strategies.find(s => s.id === 'momentum');
+                if (momStrat?.enabled && lastConfirmed.close > lastConfirmed.open) {
+                    breakdownValues.momentum = momStrat.weight;
+                    reasons.push("Mom: Positive Close (Confirmed)");
+                }
+
+                // 4. Timing
+                const timingStrat = strategies.find(s => s.id === 'timing');
+                if (timingStrat?.enabled) {
+                    const now = new Date();
+                    const h = now.getHours();
+                    if (h >= 14 && h <= 20) {
+                        breakdownValues.timing = timingStrat.weight;
+                        reasons.push("Time: Active Session");
+                    }
+                }
+
+                let score = Object.values(breakdownValues).reduce((a, b) => a + b, 0);
+                score = Math.max(0, Math.min(100, score));
+
+                // Determine Agent Mode
+                let nextAgentMode: AgentMode = 'SEARCH';
+                const points = newState.pointsToday;
+                const target = newState.targetPoints;
+                const stop = newState.stopLossPoints;
+
+                if (points <= stop) {
+                    nextAgentMode = 'LOCKDOWN';
+                } else if (points >= target) {
+                    nextAgentMode = 'DEFENSIVE';
+                } else if (score >= 85) {
+                    nextAgentMode = 'STRIKE';
+                } else if (score >= 75) {
+                    nextAgentMode = 'PREPARE';
+                } else if (score >= 60) {
+                    nextAgentMode = 'SEARCH';
+                } else {
+                    nextAgentMode = 'OBSERVE';
+                }
+
+                newState.confluenceScore = score;
+                newState.opportunityScore = score;
+                newState.breakdown = breakdownValues;
+                newState.confluenceReasons = reasons;
+                newState.agentMode = nextAgentMode;
+
+                // Agent State Transitions (Autonomous Logic)
+                const currentAgentState = state.agentState;
+                let nextAgentState = currentAgentState;
+                let stateReason = state.agentReason;
+
+                if (!newState.isMarketOpen) {
+                    nextAgentState = 'IDLE';
+                    stateReason = 'Market Closed';
+                } else if (newState.globalKillSwitch) {
+                    nextAgentState = 'IDLE';
+                    stateReason = 'Emergency Kill Active';
+                } else if (currentAgentState === 'IDLE' || currentAgentState === 'COOLDOWN') {
+                    nextAgentState = 'SEARCHING';
+                    stateReason = 'Scanning market for opportunities';
+                } else if (score >= 85) {
+                    nextAgentState = 'READY';
+                    stateReason = 'Confirming High-Confidence Trade';
+                } else if (score >= 60) {
+                    nextAgentState = 'ANALYZING';
+                    stateReason = 'Price/Indicator Alignment Detected';
+                } else {
+                    nextAgentState = 'SEARCHING';
+                    stateReason = 'Scanning market for opportunities';
+                }
+
+                if (nextAgentState !== currentAgentState) {
+                    newState.agentState = nextAgentState;
+                    newState.agentReason = stateReason;
+                    newState.lastAgentAction = Date.now();
+                    const logMsg = `AGENT: ${currentAgentState} → ${nextAgentState} (${stateReason})`;
+                    newState.systemLogs = [...state.systemLogs.slice(-20), `[${new Date().toLocaleTimeString()}] ${logMsg}`];
+                }
+            }
+        }
+
+        return newState;
     }),
 
     toggleStrategy: (id) => set((state) => ({
@@ -395,7 +570,7 @@ export const useStore = create<CockpitState>((set, get) => ({
     toggleCovertMode: () => set((state) => ({ isCovertMode: !state.isCovertMode })),
 
     requestTrade: (side) => {
-        const { currentPrice, confluenceScore, globalKillSwitch, riskStatus, isKillZone, addLog, pushNotification, activeView, defaultTrade } = get();
+        const { currentPrice, confluenceScore, globalKillSwitch, addLog, pushNotification, activeView, defaultTrade } = get();
 
         // 1. Contract Guard (Non-Negotiable)
         if (activeView !== defaultTrade) {
@@ -405,7 +580,7 @@ export const useStore = create<CockpitState>((set, get) => ({
         }
 
         // 2. Decision Firewall
-        const { agentMode, pointsToday, stopLossPoints } = get();
+        const { agentMode } = get();
         if (globalKillSwitch || agentMode === 'LOCKDOWN') {
             addLog(`🛑 TRADE BLOCKED: ${agentMode === 'LOCKDOWN' ? 'Loss Stop Reached' : 'Kill Switch Active'}.`);
             pushNotification('ERROR', `Trade Blocked: ${agentMode === 'LOCKDOWN' ? 'Daily Loss Stop' : 'Kill Switch'}`);
@@ -430,7 +605,10 @@ export const useStore = create<CockpitState>((set, get) => ({
         addLog(`INTENT: Validating ${side} request for ${activeView} at ${currentPrice}...`);
     },
 
-    setContract: (symbol) => set({ activeView: symbol }),
+    setContract: (symbol) => {
+        set({ activeView: symbol, chartStatus: 'LOADING' });
+        get().addLog(`🛰️ INSTRUMENT SYNC: Switching context to ${symbol}...`);
+    },
 
     setDefaultTrade: (symbol) => {
         const { addLog, pushNotification } = get();
@@ -449,7 +627,7 @@ export const useStore = create<CockpitState>((set, get) => ({
             // @ts-ignore
             const tradeSecret = import.meta.env.VITE_TRADE_SECRET || '';
 
-            const response = await fetch('http://localhost:3002/api/trade', {
+            const response = await fetch('/api/trade', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -462,7 +640,8 @@ export const useStore = create<CockpitState>((set, get) => ({
                     quantity: 1, // Enforce logic here or backend
                     score: pendingTrade.confluenceSnapshot,
                     timestamp: pendingTrade.timestamp
-                })
+                }),
+                credentials: 'include'
             });
 
             const result = await response.json();
@@ -490,5 +669,36 @@ export const useStore = create<CockpitState>((set, get) => ({
 
     updatePoints: (points) => set((state) => ({ pointsToday: state.pointsToday + points })),
     setAgentMode: (mode) => set({ agentMode: mode }),
-    setSearchState: (zone, waitingFor) => set({ searchState: { activeZone: zone, waitingFor } })
+    setAgentState: (state, reason) => set((prev) => {
+        if (prev.agentState === state) return prev;
+        const logMsg = `AGENT: ${prev.agentState} → ${state} (${reason})`;
+        return {
+            agentState: state,
+            agentReason: reason,
+            lastAgentAction: Date.now(),
+            systemLogs: [...prev.systemLogs.slice(-20), `[${new Date().toLocaleTimeString()}] ${logMsg}`]
+        };
+    }),
+    setSearchState: (zone, waitingFor) => set({ searchState: { activeZone: zone, waitingFor } }),
+
+    // Auth Actions
+    setAuthenticated: (val) => set({ isAuthenticated: val }),
+    setAuthLoading: (val) => set({ isAuthLoading: val }),
+
+    addReasoningLog: (state, reason, details) => set((s) => ({
+        agentReasoning: [{ timestamp: Date.now(), state, reason, details }, ...s.agentReasoning].slice(0, 50)
+    })),
+    updateConfidence: (score, breakdown) => set({ confidenceDetail: { score, breakdown } }),
+    updateChecklistStatus: (passed, failedItems) => set({ checklistStatus: { passed, failedItems } }),
+
+    addTradeReplay: (replay) => set((s) => ({ tradeReplays: [replay, ...s.tradeReplays].slice(0, 100) })),
+    updatePatienceState: (state) => set((s) => ({ patienceState: { ...s.patienceState, ...state } })),
+    updateConfidenceDecay: (state) => set((s) => ({ confidenceDecayState: { ...s.confidenceDecayState, ...state } })),
+    addStrategyProfile: (profile) => set((s) => ({ strategyProfiles: [...s.strategyProfiles, profile] })),
+    setActiveStrategy: (id) => set({ activeStrategyId: id }),
+
+    addEvolutionLog: (log) => set((s) => ({ evolutionLog: [{ timestamp: Date.now(), ...log }, ...s.evolutionLog].slice(0, 100) })),
+    addSessionRating: (rating) => set((s) => ({ sessionRatings: [{ sessionDate: Date.now(), ...rating }, ...s.sessionRatings].slice(0, 30) })),
+    updateRegimeState: (state) => set((s) => ({ regimeState: { ...s.regimeState, ...state } })),
+    setSessionProfile: (profile) => set({ sessionProfile: profile })
 }));

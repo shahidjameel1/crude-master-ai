@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, X, TrendingUp, TrendingDown, ShieldAlert } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { HoldToConfirm } from './HoldToConfirm';
 
 export function OrderConfirmationModal() {
-    const { pendingTrade, confirmTrade, cancelTrade } = useStore();
+    const { pendingTrade, confirmTrade, cancelTrade, deviceType } = useStore();
 
     if (!pendingTrade) return null;
 
@@ -86,11 +87,18 @@ export function OrderConfirmationModal() {
                             <span className="text-xs font-black text-accent">{pendingTrade.confluenceSnapshot}/100</span>
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">
-                                <ShieldAlert size={12} className="text-yellow-500" />
-                                <span>Institutional Integrity Check Passed</span>
-                            </div>
+                        <div className="flex items-center gap-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                            <ShieldAlert size={12} className="text-yellow-500" />
+                            <span>Institutional Integrity Check Passed</span>
+                        </div>
+
+                        {deviceType === 'MOBILE' ? (
+                            <HoldToConfirm
+                                onConfirm={confirmTrade}
+                                text={`COMMIT ${pendingTrade.side}`}
+                                color={isBuy ? 'bg-success' : 'bg-red-500'}
+                            />
+                        ) : (
                             <button
                                 onClick={confirmTrade}
                                 className={`w-full py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all active:scale-95 ${isBuy
@@ -100,13 +108,14 @@ export function OrderConfirmationModal() {
                             >
                                 Commit Execution
                             </button>
-                            <button
-                                onClick={cancelTrade}
-                                className="w-full py-3 text-[10px] font-bold text-white/20 uppercase tracking-widest hover:text-white transition-colors"
-                            >
-                                Discard Fragment
-                            </button>
-                        </div>
+                        )}
+
+                        <button
+                            onClick={cancelTrade}
+                            className="w-full py-3 text-[10px] font-bold text-white/20 uppercase tracking-widest hover:text-white transition-colors"
+                        >
+                            Discard Fragment
+                        </button>
                     </div>
                 </motion.div>
             </div>

@@ -5,6 +5,7 @@ import { getChart } from '../hooks/useChartSingleton';
 import { VolumetricChart3D } from './VolumetricChart3D';
 import { TradeReportModal } from './TradeReportModal';
 import { MTFPanel } from './MTFPanel';
+import { LiveCandleIndicator } from './LiveCandleIndicator';
 
 interface ContinuousChartProps {
     paperTrading: any;
@@ -18,6 +19,8 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     const vwapSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
     const priceLinesRef = useRef<Map<string, any>>(new Map());
     const wsRef = useRef<WebSocket | null>(null);
+    const [liveCandle, setLiveCandle] = useState<any | null>(null);
+
 
 
     // Zustand Store
@@ -34,7 +37,8 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
         volumeProfile,
         drawings,
         activeDrawingTool,
-        pendingTrade
+        pendingTrade,
+        chartStatus
     } = useStore();
 
     const {
@@ -47,7 +51,9 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     const loadHistoricalData = useCallback(async () => {
         if (!candleSeriesRef.current) return;
         try {
-            const response = await fetch(`http://localhost:3002/api/candles?timeframe=${activeTimeframe}`);
+            const response = await fetch(`/api/candles?timeframe=${activeTimeframe}`, {
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (data.candles && Array.isArray(data.candles)) {
@@ -149,11 +155,14 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                 }
 
                 chartRef.current?.timeScale().fitContent();
+                // RENDER LOCK: Only unlock when historical data is fully loaded
+                setUI({ chartStatus: 'READY' });
             }
         } catch (error) {
             console.error('Failed to load historical data:', error);
+            setUI({ chartStatus: 'ERROR' });
         }
-    }, [activeTimeframe, setMarketData]);
+    }, [activeTimeframe, setMarketData, setUI]);
 
     const connectWS = useCallback(() => {
         const ws = new WebSocket('ws://localhost:3001');
@@ -163,6 +172,46 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
         ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
+
+                // Handle market status
+                if (message.type === 'MARKET_STATUS') {
+                    setMarketData({ isMarketOpen: message.isOpen });
+                }
+
+                // Handle candle updates from finalization service
+                if (message.type === 'CANDLE_UPDATE') {
+                    const { confirmedCandles, liveCandle: liveCandleData } = message.data;
+
+                    // Update live candle state for indicator
+                    setLiveCandle(liveCandleData);
+
+                    // Update store with candle data (triggers strategy recalculation)
+                    setMarketData({
+                        confirmedCandles,
+                        liveCandle: liveCandleData
+                    });
+
+                    // Update chart with all candles (confirmed + live)
+                    if (candleSeriesRef.current && confirmedCandles.length > 0) {
+                        const allCandles = [...confirmedCandles];
+                        if (liveCandleData) {
+                            allCandles.push(liveCandleData);
+                        }
+
+                        // Update only the last few candles to avoid full redraw
+                        const lastCandle = allCandles[allCandles.length - 1];
+                        if (lastCandle) {
+                            candleSeriesRef.current.update({
+                                time: lastCandle.time as Time,
+                                open: lastCandle.open,
+                                high: lastCandle.high,
+                                low: lastCandle.low,
+                                close: lastCandle.close
+                            });
+                        }
+                    }
+                }
+
                 if (message.type === 'PRICE_UPDATE') {
                     const tick = message.data;
                     const time = Math.floor(tick.timestamp / 1000 / 60) * 60;
@@ -171,6 +220,9 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                     let cH = state.sessionHigh;
                     let cL = state.sessionLow;
 
+                    // Activity Signal for provable agent activity
+                    state.setUI({ lastAgentAction: Date.now() });
+
                     if (tick.price > cH) { cH = tick.price; setMarketData({ sessionHigh: cH }); }
                     if (tick.price < cL) { cL = tick.price; setMarketData({ sessionLow: cL }); }
 
@@ -178,7 +230,7 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                     if (tickVol > 0) {
                         const vwapVal = tick.price;
                         vwapSeriesRef.current?.update({ time: time as any, value: vwapVal });
-                        updatePrice(tick.price, vwapVal, state.candles);
+                        updatePrice(tick.price, vwapVal);
 
                         // Active Position Monitoring (Trailing Stop)
                         if (position) {
@@ -186,20 +238,12 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                         }
                     }
 
-                    const candle = { time: time as Time, open: tick.price, high: tick.price, low: tick.price, close: tick.price };
-                    candleSeriesRef.current?.update(candle as any);
-
-                    if (tick.volume) {
-                        volumeSeriesRef.current?.update({
-                            time: time as any, value: tick.volume - lastVolume,
-                            color: tick.price >= candle.open ? '#00D1FF' : '#E0E0E0'
-                        });
-                        lastVolume = tick.volume;
-                    }
                 }
-            } catch (e) { console.error('WS MSG Error', e); }
+            } catch (e) {
+                console.error('WS MSG Error', e);
+            }
         };
-    }, [setMarketData, updatePrice]);
+    }, [setMarketData, updatePrice, position, updateTrailingStop]);
 
     useLayoutEffect(() => {
         if (!chartContainerRef.current) return;
@@ -253,24 +297,28 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     }, [candles, confluenceScore]);
 
     useEffect(() => {
+        connectWS();
+        return () => {
+            if (wsRef.current) wsRef.current.close();
+        };
+    }, [connectWS]);
+
+    useEffect(() => {
         if (!chartContainerRef.current || !chartRef.current) return;
 
         const observer = new ResizeObserver(entries => {
-            const { width, height } = entries[0].contentRect;
-            if (width > 0 && height > 0) {
-                chartRef.current?.applyOptions({ width, height });
+            if (entries[0].contentRect.width > 0 && entries[0].contentRect.height > 0) {
+                chartRef.current?.applyOptions({
+                    width: entries[0].contentRect.width,
+                    height: entries[0].contentRect.height
+                });
                 chartRef.current?.timeScale().fitContent();
             }
         });
 
         observer.observe(chartContainerRef.current);
-        connectWS();
-
-        return () => {
-            if (wsRef.current) wsRef.current.close();
-            observer.disconnect();
-        };
-    }, [connectWS]);
+        return () => observer.disconnect();
+    }, []);
 
     return (
         <div className="w-full h-full flex flex-col min-h-0 relative">
@@ -279,6 +327,14 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                 <div style={{ height: '40%', bottom: 0 }} className="absolute inset-x-0 bg-green-500" />
                 <div style={{ height: '40%', top: 0 }} className="absolute inset-x-0 bg-red-500" />
             </div>
+
+            {/* RENDER LOCK: Waiting for Data Overlay */}
+            {chartStatus !== 'READY' && (
+                <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center animate-pulse">
+                    <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin mb-4" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white/40">Waiting for Market Data...</span>
+                </div>
+            )}
 
             {/* AI Insight Drawer Overlay */}
             <div className={`absolute top-4 right-4 z-50 transition-all duration-500 transform ${isInsightDrawerOpen ? 'translate-x-0' : 'translate-x-[120%] opacity-0'}`}>
@@ -294,7 +350,14 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                     {is3DMode ? (
                         <div className="absolute inset-0 p-4"><VolumetricChart3D /></div>
                     ) : (
-                        <div ref={chartContainerRef} className="chart-root" />
+                        <>
+                            <div ref={chartContainerRef} className="chart-root" />
+                            <LiveCandleIndicator
+                                isLive={liveCandle !== null}
+                                chart={chartRef.current}
+                                series={candleSeriesRef.current}
+                            />
+                        </>
                     )}
                 </div>
 
