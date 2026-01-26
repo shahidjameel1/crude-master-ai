@@ -31,7 +31,6 @@ export function TopBar() {
     const heartbeat = useHeartbeat();
     const paperTrading = usePaperTrading();
     const [isContractMenuOpen, setIsContractMenuOpen] = useState(false);
-    const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
     const [pendingDefaultSwitch, setPendingDefaultSwitch] = useState<ContractSymbol | null>(null);
 
     const activeContract = contracts.find(c => c.symbol === activeView) || contracts[0];
