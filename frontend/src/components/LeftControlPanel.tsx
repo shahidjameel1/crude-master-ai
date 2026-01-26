@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Layers, Target, Info, TrendingUp, Plus } from 'lucide-react';
+import { Layers, Target, Plus } from 'lucide-react';
+
 import { RiskCalculator } from './RiskCalculator';
 import { AutomationDashboard } from './AutomationDashboard';
 import { useAutomationEngine } from '../hooks/useAutomationEngine';
@@ -145,8 +146,8 @@ function StrategyCard({ strategy, onToggle, onWeightChange }: {
             onMouseLeave={handleMouseLeave}
             style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
             className={`p-3 rounded-xl border transition-all relative overflow-hidden ${strategy.enabled
-                    ? 'bg-accent/5 border-accent/20 cursor-pointer'
-                    : 'bg-white/2 border-white/5 opacity-40 grayscale'
+                ? 'bg-accent/5 border-accent/20 cursor-pointer'
+                : 'bg-white/2 border-white/5 opacity-40 grayscale'
                 }`}
         >
             <div className="flex items-center justify-between mb-2">

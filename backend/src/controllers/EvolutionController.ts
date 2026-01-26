@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// In-memory storage (Android-compatible, no Prisma)
+const evolutionLogs: any[] = [];
+const sessionRatings: any[] = [];
+let regimeState: any = { isNoTradeMode: false, reason: '', detectedAt: null };
 
 export class EvolutionController {
     // Get evolution logs
@@ -12,13 +14,13 @@ export class EvolutionController {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
 
-            const logs = await prisma.evolutionLog.findMany({
-                where: { userId },
-                orderBy: { timestamp: 'desc' },
-                take: 100
-            });
+            // Filter by userId and return last 100
+            const userLogs = evolutionLogs
+                .filter(log => log.userId === userId)
+                .slice(-100)
+                .reverse();
 
-            res.json(logs);
+            res.json(userLogs);
         } catch (error) {
             console.error('Error fetching evolution logs:', error);
             res.status(500).json({ error: 'Failed to fetch evolution logs' });
@@ -35,17 +37,23 @@ export class EvolutionController {
 
             const { confirmation, oldWeight, newWeight, reason, sampleSize } = req.body;
 
-            const log = await prisma.evolutionLog.create({
-                data: {
-                    userId,
-                    confirmation,
-                    oldWeight,
-                    newWeight,
-                    reason,
-                    sampleSize,
-                    timestamp: new Date()
-                }
-            });
+            const log = {
+                id: Date.now().toString(),
+                userId,
+                confirmation,
+                oldWeight,
+                newWeight,
+                reason,
+                sampleSize,
+                timestamp: new Date()
+            };
+
+            evolutionLogs.push(log);
+
+            // Keep only last 1000 logs in memory
+            if (evolutionLogs.length > 1000) {
+                evolutionLogs.shift();
+            }
 
             res.json(log);
         } catch (error) {
@@ -62,13 +70,13 @@ export class EvolutionController {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
 
-            const ratings = await prisma.sessionRating.findMany({
-                where: { userId },
-                orderBy: { sessionDate: 'desc' },
-                take: 30
-            });
+            // Filter by userId and return last 30
+            const userRatings = sessionRatings
+                .filter(rating => rating.userId === userId)
+                .slice(-30)
+                .reverse();
 
-            res.json(ratings);
+            res.json(userRatings);
         } catch (error) {
             console.error('Error fetching session ratings:', error);
             res.status(500).json({ error: 'Failed to fetch session ratings' });
@@ -85,19 +93,25 @@ export class EvolutionController {
 
             const { sessionDate, overallScore, discipline, patience, signalQuality, executionTiming, riskAdherence, explanation } = req.body;
 
-            const rating = await prisma.sessionRating.create({
-                data: {
-                    userId,
-                    sessionDate: new Date(sessionDate),
-                    overallScore,
-                    discipline,
-                    patience,
-                    signalQuality,
-                    executionTiming,
-                    riskAdherence,
-                    explanation
-                }
-            });
+            const rating = {
+                id: Date.now().toString(),
+                userId,
+                sessionDate: new Date(sessionDate),
+                overallScore,
+                discipline,
+                patience,
+                signalQuality,
+                executionTiming,
+                riskAdherence,
+                explanation
+            };
+
+            sessionRatings.push(rating);
+
+            // Keep only last 100 ratings in memory
+            if (sessionRatings.length > 100) {
+                sessionRatings.shift();
+            }
 
             res.json(rating);
         } catch (error) {
@@ -114,12 +128,7 @@ export class EvolutionController {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
 
-            const state = await prisma.regimeState.findFirst({
-                where: { userId },
-                orderBy: { updatedAt: 'desc' }
-            });
-
-            res.json(state || { isNoTradeMode: false, reason: '', detectedAt: null });
+            res.json(regimeState);
         } catch (error) {
             console.error('Error fetching regime state:', error);
             res.status(500).json({ error: 'Failed to fetch regime state' });
@@ -136,19 +145,15 @@ export class EvolutionController {
 
             const { isNoTradeMode, reason } = req.body;
 
-            // Delete old state and create new one
-            await prisma.regimeState.deleteMany({ where: { userId } });
+            regimeState = {
+                userId,
+                isNoTradeMode,
+                reason,
+                detectedAt: isNoTradeMode ? new Date() : null,
+                updatedAt: new Date()
+            };
 
-            const state = await prisma.regimeState.create({
-                data: {
-                    userId,
-                    isNoTradeMode,
-                    reason,
-                    detectedAt: isNoTradeMode ? new Date() : null
-                }
-            });
-
-            res.json(state);
+            res.json(regimeState);
         } catch (error) {
             console.error('Error updating regime state:', error);
             res.status(500).json({ error: 'Failed to update regime state' });
