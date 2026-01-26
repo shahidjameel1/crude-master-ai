@@ -32,9 +32,11 @@ function App() {
         globalKillSwitch,
         triggerKillSwitch,
         isStrategyCreatorOpen,
+        isAuthenticated,
         isAuthLoading,
         setAuthenticated,
         setAuthLoading,
+        isDrawerOpen,
         fetchSystemStatus
     } = useStore();
 
