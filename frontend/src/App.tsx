@@ -32,11 +32,10 @@ function App() {
         globalKillSwitch,
         triggerKillSwitch,
         isStrategyCreatorOpen,
-        isAuthenticated,
         isAuthLoading,
         setAuthenticated,
         setAuthLoading,
-        isDrawerOpen
+        fetchSystemStatus
     } = useStore();
 
     const paperTrading = usePaperTrading();
@@ -88,6 +87,13 @@ function App() {
 
         verifySession();
     }, [setAuthenticated, setAuthLoading]);
+
+    // Fetch System Status (Mode/Health)
+    useEffect(() => {
+        fetchSystemStatus();
+        const interval = setInterval(fetchSystemStatus, 30000); // Pulse every 30s
+        return () => clearInterval(interval);
+    }, [fetchSystemStatus]);
 
     // Global 401 Interceptor
     useEffect(() => {

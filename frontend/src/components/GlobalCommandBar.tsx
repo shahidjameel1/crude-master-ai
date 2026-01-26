@@ -23,7 +23,8 @@ export function GlobalCommandBar() {
         setAgentState,
         notifications,
         isNotificationDrawerOpen,
-        isMarketOpen
+        isMarketOpen,
+        systemMode
     } = useStore();
 
     const heartbeat = useHeartbeat();
@@ -58,6 +59,14 @@ export function GlobalCommandBar() {
                         <ChevronDown size={12} className="text-white/40 group-hover:text-accent" />
                     </div>
                 </div>
+
+                {/* Paper Mode Badge */}
+                {systemMode === 'PAPER' && (
+                    <div className="ml-2 px-2 py-0.5 rounded border border-yellow-500/20 bg-yellow-500/10 flex items-center gap-1.5 animate-pulse">
+                        <div className="w-1 h-1 rounded-full bg-yellow-500" />
+                        <span className="text-[8px] font-black uppercase tracking-tighter text-yellow-500">Paper Mode · Simulated</span>
+                    </div>
+                )}
             </div>
 
             {/* RIGHT: Global Command Matrix */}

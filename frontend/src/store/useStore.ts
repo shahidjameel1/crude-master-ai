@@ -202,6 +202,10 @@ export interface CockpitState {
     isAuthenticated: boolean;
     isAuthLoading: boolean;
 
+    // System Status
+    systemMode: 'PAPER' | 'LIVE';
+    backendStatus: { status: string; dataFeed: string; orders: string };
+
     // Actions
     setMarketData: (data: Partial<CockpitState>) => void;
     updatePrice: (price: number, vwap: number) => void;
@@ -229,6 +233,7 @@ export interface CockpitState {
     // Auth Actions
     setAuthenticated: (val: boolean) => void;
     setAuthLoading: (val: boolean) => void;
+    fetchSystemStatus: () => Promise<void>;
 
     // Transparency Actions
     addReasoningLog: (state: string, reason: string, details?: string) => void;
@@ -268,6 +273,9 @@ export const useStore = create<CockpitState>((set, get) => ({
     sessionHigh: 0,
     sessionLow: 0,
     volumeProfile: [],
+
+    systemMode: 'PAPER',
+    backendStatus: { status: 'OFFLINE', dataFeed: 'OFFLINE', orders: 'SIMULATED' },
 
     strategies: [
         { id: 'trend', name: 'Trend Context', description: 'HTF & LTF Alignment', enabled: true, weight: 20 },
@@ -684,6 +692,23 @@ export const useStore = create<CockpitState>((set, get) => ({
     // Auth Actions
     setAuthenticated: (val) => set({ isAuthenticated: val }),
     setAuthLoading: (val) => set({ isAuthLoading: val }),
+
+    fetchSystemStatus: async () => {
+        try {
+            const res = await fetch('/health');
+            const data = await res.json();
+            set({
+                systemMode: data.mode as any,
+                backendStatus: {
+                    status: data.status,
+                    dataFeed: data.dataFeed,
+                    orders: data.orders
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch system status:', error);
+        }
+    },
 
     addReasoningLog: (state, reason, details) => set((s) => ({
         agentReasoning: [{ timestamp: Date.now(), state, reason, details }, ...s.agentReasoning].slice(0, 50)

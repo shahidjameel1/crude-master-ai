@@ -22,6 +22,18 @@ export class OrderService {
      * Place a real order via Angel One
      */
     public async placeOrder(req: OrderRequest) {
+        const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+
+        if (MODE === "PAPER") {
+            console.log(`📝 SIMULATED ORDER (PAPER MODE): ${req.side} ${req.symbol} x ${req.quantity}`);
+            return {
+                success: true,
+                orderId: `SIM-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                executionPrice: req.price || 0,
+                timestamp: Date.now()
+            };
+        }
+
         if (!this.smartApi) {
             throw new Error('Broker connection not initialized');
         }

@@ -9,7 +9,7 @@ import { RiskParameters, SystemState, TradingMode, Candle } from '../shared/type
  */
 
 console.log('🚀 CRUDE-MASTER AI - Demo Trading Simulation\n');
-console.log('='.\repeat(60));
+console.log('='.repeat(60));
 console.log('Objective: Demonstrate 50-point daily profit target');
 console.log('Strategy: ICT+SMC Hybrid');
 console.log('Risk: 1:2 Risk-Reward Ratio');

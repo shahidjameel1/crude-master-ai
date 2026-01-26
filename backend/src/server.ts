@@ -12,6 +12,7 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import cookie from "cookie";
 import jwt from "jsonwebtoken";
+import speakeasy from "speakeasy";
 import { CandleFinalizationService } from "./services/CandleFinalizationService";
 import { AuthController } from "./controllers/AuthController";
 import { authMiddleware } from "./middleware/authMiddleware";
@@ -92,19 +93,36 @@ app.post('/api/security/kill', SecurityController.emergencyKill);
 app.get('/api/security/heartbeat', SecurityController.heartbeat);
 app.post('/api/security/reset', SecurityController.resetSystem); // Demo only
 
+/* ───────── SYSTEM HEALTH ───────── */
+app.get('/health', (req, res) => {
+    res.json({
+        status: "ok",
+        mode: (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase(),
+        dataFeed: (global as any).smartApiInitialized ? "ANGEL_ONE" : "OFFLINE",
+        orders: (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase() === "PAPER" ? "SIMULATED" : "BROKER_ENABLED"
+    });
+});
+
+/* ───────── MODE ENFORCEMENT (ANDROID-SAFE) ───────── */
+const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+console.log(`🛡️ SYSTEM STARTING IN MODE: [ ${MODE} ]`);
+
+if (MODE !== 'PAPER') {
+    console.warn(`⚠️  WARNING: Non-paper mode detected. Real orders are DISABLED for Android safety.`);
+}
+
+// Android time sync warning
+console.warn("⚠️  Ensure system time is synced (ntpdate) on Android/Termux");
+
 /* ───────── CONFIG ───────── */
 const {
     ANGEL_API_KEY,
     ANGEL_CLIENT_CODE,
     ANGEL_PASSWORD,
     ANGEL_TOTP_KEY,
-    TRADING_MODE, // PAPER, SHADOW, ASSISTED, LIVE
 } = process.env;
 
-// Enforce Mode Defaults
 const savedState = systemState.getState();
-const CURRENT_MODE = (process.env.TRADING_MODE || 'PAPER').toUpperCase();
-console.log(`🛡️ SYSTEM STARTING IN MODE: [ ${CURRENT_MODE} ]`);
 
 let smartApi: any;
 let wsClient: any;
@@ -139,9 +157,11 @@ async function initAngel() {
 
         smartApi = new SmartAPI({ api_key: ANGEL_API_KEY as string });
 
-        // Generate TOTP
-        const { authenticator } = await import('@otplib/preset-default');
-        const totp = authenticator.generate(ANGEL_TOTP_KEY as string);
+        // Generate TOTP with speakeasy (Android-compatible)
+        const totp = speakeasy.totp({
+            secret: ANGEL_TOTP_KEY as string,
+            encoding: 'base32'
+        });
 
         console.log('🔐 TOTP generated:', totp);
         console.log('🔄 Calling generateSession...');
@@ -179,14 +199,20 @@ async function initAngel() {
             console.error('📦 Response:', JSON.stringify(session, null, 2));
             console.error('💬 Message:', session.message || 'No message');
             console.error('⚠️ Error Code:', session.errorcode || 'No error code');
+            console.warn('⚠️  Backend will continue - data feed unavailable');
         }
     } catch (error) {
         console.error('❌ Angel One Init Error:', error);
         console.error('📦 Full Error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        console.warn('⚠️  Backend will continue - data feed unavailable');
     }
 }
 
-initAngel();
+// Initialize Angel One (non-blocking)
+initAngel().catch(err => {
+    console.error('❌ Angel One initialization failed:', err);
+    console.warn('⚠️  Backend continuing without live data feed');
+});
 
 /* ───────── FRONTEND WS ───────── */
 const wss = new WebSocket.Server({ port: 3001 });
