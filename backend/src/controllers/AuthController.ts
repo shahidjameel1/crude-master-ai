@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { setSystemMode } from '../server';
 
 export class AuthController {
     static async login(req: Request, res: Response): Promise<void> {
@@ -16,8 +17,24 @@ export class AuthController {
             return;
         }
 
-        if (username !== ADMIN_USERNAME) {
-            res.status(401).json({ error: 'Invalid credentials' });
+        // Determine intended mode based on username prefix
+        let intendedMode = 'PAPER';
+        let isValidUser = false;
+
+        if (username.startsWith('live_user_') || username === 'live_admin') {
+            intendedMode = 'LIVE';
+            isValidUser = true; // For now, we validate password against global admin hash
+        } else if (username.startsWith('paper_user_') || username === 'paper_admin') {
+            intendedMode = 'PAPER';
+            isValidUser = true;
+        } else if (username === ADMIN_USERNAME) {
+            intendedMode = 'PAPER'; // Default admin to PAPER for safety, or keep existing state? 
+            // Let's default standard 'admin' to PAPER for Android safety.
+            isValidUser = true;
+        }
+
+        if (!isValidUser) {
+            res.status(401).json({ error: 'Invalid username' });
             return;
         }
 
@@ -28,9 +45,13 @@ export class AuthController {
             return;
         }
 
-        console.log(`✅ Login successful for user: [${username}]`);
+        // Switch System Mode
+        setSystemMode(intendedMode);
+
+        console.log(`✅ Login successful for user: [${username}] -> Switching to ${intendedMode} MODE`);
+
         // Generate JWT
-        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ username, mode: intendedMode }, JWT_SECRET, { expiresIn: '24h' });
 
         // Set HttpOnly cookie
         res.cookie('auth_token', token, {
@@ -40,7 +61,7 @@ export class AuthController {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
-        res.json({ message: 'Login successful' });
+        res.json({ message: `Login successful. Mode: ${intendedMode}`, mode: intendedMode });
     }
 
     static logout(req: Request, res: Response): void {

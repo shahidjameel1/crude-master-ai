@@ -104,7 +104,20 @@ app.get('/health', (req, res) => {
 });
 
 /* ───────── MODE ENFORCEMENT (ANDROID-SAFE) ───────── */
-const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+export let MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+
+export const setSystemMode = (mode: string) => {
+    const newMode = mode.toUpperCase();
+    if (newMode === "PAPER" || newMode === "LIVE") {
+        MODE = newMode;
+        EvolutionController.clearSessionData();
+        console.log(`🔄 SYSTEM MODE SWITCHED TO: [${MODE}]`);
+    } else {
+        console.warn(`⚠️ Attempted to switch to invalid mode: ${mode}`);
+    }
+};
+
+export const getSystemMode = () => MODE;
 console.log(`🛡️ SYSTEM STARTING IN MODE: [ ${MODE} ]`);
 
 if (MODE !== 'PAPER') {
@@ -548,9 +561,9 @@ app.post("/api/trade", authMiddleware, (req, res) => {
     }
 
     // 4. EXECUTION GATE (Mode Switch)
-    console.log(`✅ FIREWALL PASSED. MODE: ${CURRENT_MODE}`);
+    console.log(`✅ FIREWALL PASSED. MODE: ${MODE}`);
 
-    if (CURRENT_MODE === 'SHADOW') {
+    if (MODE === 'SHADOW') {
         console.log('👻 SHADOW MODE: Trade logged but NOT executed.');
         return res.json({
             status: 'SHADOW_LOGGED',
@@ -559,7 +572,7 @@ app.post("/api/trade", authMiddleware, (req, res) => {
         });
     }
 
-    if (CURRENT_MODE === 'PAPER') {
+    if (MODE === 'PAPER') {
         console.log('📝 PAPER MODE: Simulating execution internally.');
         // In paper mode, we still use the OrderService if we want a local ledger, 
         // but since we don't have a paper ledger DB yet, we just mock the success.
@@ -574,7 +587,7 @@ app.post("/api/trade", authMiddleware, (req, res) => {
         return;
     }
 
-    if (CURRENT_MODE === 'LIVE' || CURRENT_MODE === 'ASSISTED') {
+    if (MODE === 'LIVE' || MODE === 'ASSISTED') {
         if (!orderService) {
             return res.status(503).json({ status: 'ERROR', message: 'Order service not available' });
         }
@@ -598,7 +611,7 @@ app.post("/api/trade", authMiddleware, (req, res) => {
             quantity: quantity || 1
         }).then(result => {
             res.json({
-                status: CURRENT_MODE === 'LIVE' ? 'EXECUTED_LIVE' : 'EXECUTED_ASSISTED',
+                status: MODE === 'LIVE' ? 'EXECUTED_LIVE' : 'EXECUTED_ASSISTED',
                 orderId: result.orderId,
                 executionPrice: result.executionPrice,
                 timestamp: result.timestamp

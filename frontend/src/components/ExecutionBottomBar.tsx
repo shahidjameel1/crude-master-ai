@@ -41,12 +41,16 @@ export function ExecutionBottomBar() {
                         disabled={globalKillSwitch || !checklistStatus.passed}
                         className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-12 rounded-xl font-black uppercase text-xs transition-all ${globalKillSwitch || !checklistStatus.passed
                             ? 'bg-white/5 text-white/10 cursor-not-allowed'
-                            : 'bg-green-500/10 border border-green-500/20 text-green-500 hover:bg-green-500/20 shadow-green-glow'
+                            : systemMode === 'PAPER'
+                                ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 shadow-yellow-glow'
+                                : 'bg-green-600/20 border border-green-500/40 text-green-400 hover:bg-green-500/30 shadow-green-glow'
                             }`}
                         onClick={() => requestTrade('BUY')}
                     >
                         <ArrowUpCircle size={18} />
-                        <span className="md:inline">{isCovertMode ? '▲' : 'Buy'}</span>
+                        <span className="md:inline">
+                            {isCovertMode ? '▲' : systemMode === 'PAPER' ? 'SIMULATE BUY' : 'LIVE BUY'}
+                        </span>
                     </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.02 }}
@@ -54,12 +58,16 @@ export function ExecutionBottomBar() {
                         disabled={globalKillSwitch || !checklistStatus.passed}
                         className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 h-12 rounded-xl font-black uppercase text-xs transition-all ${globalKillSwitch || !checklistStatus.passed
                             ? 'bg-white/5 text-white/10 cursor-not-allowed'
-                            : 'bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 shadow-red-glow'
+                            : systemMode === 'PAPER'
+                                ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20 shadow-yellow-glow'
+                                : 'bg-red-600/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 shadow-red-glow'
                             }`}
                         onClick={() => requestTrade('SELL')}
                     >
                         <ArrowDownCircle size={18} />
-                        <span className="md:inline">{isCovertMode ? '▼' : 'Sell'}</span>
+                        <span className="md:inline">
+                            {isCovertMode ? '▼' : systemMode === 'PAPER' ? 'SIMULATE SELL' : 'LIVE SELL'}
+                        </span>
                     </motion.button>
                 </div>
             </div>

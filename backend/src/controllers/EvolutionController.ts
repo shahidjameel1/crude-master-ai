@@ -159,4 +159,12 @@ export class EvolutionController {
             res.status(500).json({ error: 'Failed to update regime state' });
         }
     }
+
+    // Clear session data (for mode switching)
+    static clearSessionData() {
+        evolutionLogs.length = 0;
+        sessionRatings.length = 0;
+        regimeState = { isNoTradeMode: false, reason: '', detectedAt: null };
+        console.log('🧹 Evolution/Session Stats Cleared.');
+    }
 }

@@ -61,10 +61,15 @@ export function GlobalCommandBar() {
                 </div>
 
                 {/* Paper Mode Badge */}
-                {systemMode === 'PAPER' && (
+                {systemMode === 'PAPER' ? (
                     <div className="ml-2 px-2 py-0.5 rounded border border-yellow-500/20 bg-yellow-500/10 flex items-center gap-1.5 animate-pulse">
                         <div className="w-1 h-1 rounded-full bg-yellow-500" />
-                        <span className="text-[8px] font-black uppercase tracking-tighter text-yellow-500">Paper Mode · Simulated</span>
+                        <span className="text-[8px] font-black uppercase tracking-tighter text-yellow-500">🧪 SIMULATION TERMINAL</span>
+                    </div>
+                ) : (
+                    <div className="ml-2 px-2 py-0.5 rounded border border-red-500/20 bg-red-900/10 flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-[8px] font-black uppercase tracking-tighter text-red-500">💰 EXECUTION TERMINAL</span>
                     </div>
                 )}
             </div>

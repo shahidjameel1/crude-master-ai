@@ -30,6 +30,7 @@ export const AuthOverlay: React.FC = () => {
             console.log(`📡 Server Responded: ${response.status}`);
 
             if (response.ok) {
+                await useStore.getState().fetchSystemStatus(); // Sync mode immediately
                 setAuthenticated(true);
                 pushNotification('SUCCESS', 'Access Granted');
             } else {

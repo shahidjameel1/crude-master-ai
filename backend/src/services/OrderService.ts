@@ -1,5 +1,6 @@
 import { SmartAPI } from "smartapi-javascript";
 import { OrderSide, OrderType, OrderStatus } from "../types";
+import { getSystemMode } from "../server";
 
 export interface OrderRequest {
     symbol: string;
@@ -22,9 +23,9 @@ export class OrderService {
      * Place a real order via Angel One
      */
     public async placeOrder(req: OrderRequest) {
-        const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+        const CURRENT_MODE = getSystemMode();
 
-        if (MODE === "PAPER") {
+        if (CURRENT_MODE === "PAPER") {
             console.log(`📝 SIMULATED ORDER (PAPER MODE): ${req.side} ${req.symbol} x ${req.quantity}`);
             return {
                 success: true,
