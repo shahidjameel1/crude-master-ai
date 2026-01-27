@@ -1,10 +1,7 @@
 import { SmartAPI, WebSocketV2 } from 'smartapi-javascript';
-import { createRequire } from 'module';
-import { MarketData } from '../types';
 import dotenv from 'dotenv';
-
-const customRequire = createRequire(import.meta.url);
-const { authenticator } = customRequire('@otplib/preset-default');
+// @ts-ignore
+const { authenticator } = require('@otplib/preset-default');
 
 dotenv.config();
 

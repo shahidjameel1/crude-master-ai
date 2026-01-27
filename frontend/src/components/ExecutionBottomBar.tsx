@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpCircle, ArrowDownCircle, ScrollText, History, Zap, CheckCircle2 } from 'lucide-react';
+import { LuArrowUp, LuArrowDown, LuScrollText, LuHistory, LuZap, LuCheck } from "react-icons/lu";
 import { PreTradeChecklist } from './PreTradeChecklist';
 
 export function ExecutionBottomBar() {
@@ -13,7 +13,8 @@ export function ExecutionBottomBar() {
         requestTrade,
         isCovertMode,
         deviceType,
-        checklistStatus
+        checklistStatus,
+        systemMode
     } = useStore();
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ export function ExecutionBottomBar() {
                             }`}
                         onClick={() => requestTrade('BUY')}
                     >
-                        <ArrowUpCircle size={18} />
+                        <LuArrowUp size={18} />
                         <span className="md:inline">
                             {isCovertMode ? '▲' : systemMode === 'PAPER' ? 'SIMULATE BUY' : 'LIVE BUY'}
                         </span>
@@ -64,7 +65,7 @@ export function ExecutionBottomBar() {
                             }`}
                         onClick={() => requestTrade('SELL')}
                     >
-                        <ArrowDownCircle size={18} />
+                        <LuArrowDown size={18} />
                         <span className="md:inline">
                             {isCovertMode ? '▼' : systemMode === 'PAPER' ? 'SIMULATE SELL' : 'LIVE SELL'}
                         </span>
@@ -80,7 +81,7 @@ export function ExecutionBottomBar() {
             {/* Live Activity Log - Desktop only or controlled by tab */}
             <div className="hidden lg:flex flex-1 h-full py-3 flex flex-col gap-2 min-w-0">
                 <div className="flex items-center gap-2 border-b border-white/5 pb-1">
-                    <ScrollText size={12} className="text-accent" />
+                    <LuScrollText size={12} className="text-accent" />
                     <span className="text-[8px] text-white/40 uppercase font-black tracking-widest">System Activity Log</span>
                 </div>
                 <div
@@ -116,7 +117,7 @@ export function ExecutionBottomBar() {
             <div className="flex items-center justify-between md:justify-end w-full md:w-auto gap-4 md:gap-6 px-2 md:px-0 md:pl-6 md:border-l border-white/5">
                 <div className="flex flex-col items-start md:items-end gap-1">
                     <div className="flex items-center gap-2">
-                        <Zap size={14} className={confluenceScore >= 80 ? 'text-accent animate-pulse' : 'text-white/20'} />
+                        <LuZap size={14} className={confluenceScore >= 80 ? 'text-accent animate-pulse' : 'text-white/20'} />
                         <span className="text-[8px] text-white/20 uppercase font-black tracking-widest leading-none">Logic</span>
                     </div>
                     <div className={`text-[9px] font-bold uppercase transition-colors ${confluenceScore >= 80 ? 'text-accent' : 'text-white/20'}`}>
@@ -126,11 +127,11 @@ export function ExecutionBottomBar() {
 
                 <div className="flex flex-col items-start md:items-end group cursor-pointer">
                     <div className="flex items-center gap-2">
-                        <History size={14} className="text-white/20 group-hover:text-accent transition-colors" />
+                        <LuHistory size={14} className="text-white/20 group-hover:text-accent transition-colors" />
                         <span className="text-[8px] text-white/20 uppercase font-black tracking-widest group-hover:text-white transition-colors leading-none">Last</span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                        <CheckCircle2 size={12} className="text-green-500/60" />
+                        <LuCheck size={12} className="text-green-500/60" />
                         <span className="text-[9px] font-bold text-white/80">{isCovertMode ? 'Δ +2.4' : '+₹2,450'}</span>
                     </div>
                 </div>

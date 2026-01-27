@@ -39,11 +39,12 @@ export class DemoDataGenerator {
             const volumeSpike = Math.abs(movement) > currentPrice * volatility * 2 ? 2 : 1;
             const volume = Math.floor(baseVolume * volumeSpike);
 
-            const timestamp = new Date();
-            timestamp.setMinutes(timestamp.getMinutes() - (numCandles - i));
+            const date = new Date();
+            date.setMinutes(date.getMinutes() - (numCandles - i));
+            const time = Math.floor(date.getTime() / 1000);
 
             candles.push({
-                timestamp,
+                time,
                 open: Math.round(open * 100) / 100,
                 high: Math.round(high * 100) / 100,
                 low: Math.round(low * 100) / 100,
@@ -73,25 +74,25 @@ export class DemoDataGenerator {
         return {
             '1m': {
                 symbol: 'CRUDEOIL',
-                timeframe: '1m',
+                interval: '1m',
                 candles: this.generateSampleData('1m', 200, basePrice),
                 lastUpdate: now
             },
             '5m': {
                 symbol: 'CRUDEOIL',
-                timeframe: '5m',
+                interval: '5m',
                 candles: this.aggregateCandles(this.generateSampleData('1m', 500, basePrice), 5),
                 lastUpdate: now
             },
             '15m': {
                 symbol: 'CRUDEOIL',
-                timeframe: '15m',
+                interval: '15m',
                 candles: this.aggregateCandles(this.generateSampleData('1m', 1500, basePrice), 15),
                 lastUpdate: now
             },
             '1h': {
                 symbol: 'CRUDEOIL',
-                timeframe: '1h',
+                interval: '1h',
                 candles: this.aggregateCandles(this.generateSampleData('1m', 3000, basePrice), 60),
                 lastUpdate: now
             }
@@ -115,7 +116,7 @@ export class DemoDataGenerator {
             const volume = chunk.reduce((sum, c) => sum + c.volume, 0);
 
             aggregated.push({
-                timestamp: chunk[0].timestamp,
+                time: chunk[0].time,
                 open,
                 high,
                 low,
@@ -153,7 +154,7 @@ export class DemoDataGenerator {
 
         return {
             symbol: 'CRUDEOIL',
-            timeframe: '5m',
+            interval: '5m',
             candles: baseCandles,
             lastUpdate: new Date()
         };
@@ -196,7 +197,7 @@ export class DemoDataGenerator {
 
             output[tf] = {
                 symbol: 'CRUDEOIL',
-                timeframe: tf,
+                interval: tf,
                 candles: [...candles], // Return copy
                 lastUpdate: now
             };

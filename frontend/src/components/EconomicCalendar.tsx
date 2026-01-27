@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { LuCalendar, LuClock, LuCircleAlert, LuTrendingUp } from "react-icons/lu";
 
 interface EconomicEvent {
     id: string;
@@ -24,7 +24,7 @@ export function EconomicCalendar() {
         <div className="flex flex-col gap-6 p-6 bg-black/60 backdrop-blur-3xl border border-white/5 rounded-3xl h-full overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-3">
-                    <Calendar className="text-accent" size={20} />
+                    <LuCalendar className="text-accent" size={20} />
                     <h2 className="text-xl font-black text-white uppercase tracking-tighter">Fundamental Pulse</h2>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] text-white/40 uppercase font-black">
@@ -48,7 +48,7 @@ export function EconomicCalendar() {
 
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <Clock size={12} className="text-white/20" />
+                                <LuClock size={12} className="text-white/20" />
                                 <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{event.time}</span>
                             </div>
                             <h3 className="text-sm font-black text-white group-hover:text-accent transition-colors">{event.title}</h3>
@@ -70,14 +70,14 @@ export function EconomicCalendar() {
                         </div>
 
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <TrendingUp size={16} className="text-accent" />
+                            <LuTrendingUp size={16} className="text-accent" />
                         </div>
                     </motion.div>
                 ))}
             </div>
 
             <div className="mt-auto p-4 bg-accent/5 border border-accent/20 rounded-2xl flex items-start gap-4">
-                <AlertCircle size={20} className="text-accent shrink-0 mt-1" />
+                <LuCircleAlert size={20} className="text-accent shrink-0 mt-1" />
                 <div className="space-y-1">
                     <h4 className="text-[10px] font-black text-accent uppercase tracking-widest">WTI/BRENT Alert</h4>
                     <p className="text-xs text-white/60 leading-relaxed">

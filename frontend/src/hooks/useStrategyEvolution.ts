@@ -21,7 +21,7 @@ export const useStrategyEvolution = () => {
         tradeHistory.slice(-50).forEach((trade: any) => {
             if (!trade.strategyComponents) return;
 
-            Object.entries(trade.strategyComponents).forEach(([key, value]) => {
+            Object.entries(trade.strategyComponents).forEach(([key, _value]) => {
                 if (!confirmationPerformance[key]) {
                     confirmationPerformance[key] = { wins: 0, total: 0 };
                 }

@@ -62,11 +62,13 @@ export class ICTSMCHybridStrategy {
 
         // Only trade if 1h and 15m align
         if (structure1h.trend === 'neutral' || structure15m.trend === 'neutral') {
-            return null; // No clear trend
+            result.explanation = 'No clear trend (neutral) on higher timeframes';
+            return result;
         }
 
         if (structure1h.trend !== structure15m.trend) {
-            return null; // Timeframes not in agreement
+            result.explanation = `Timeframe mismatch: 1H is ${structure1h.trend} but 15M is ${structure15m.trend}`;
+            return result;
         }
 
         const overallTrend = structure1h.trend;
@@ -121,11 +123,12 @@ export class ICTSMCHybridStrategy {
                     const takeProfit = currentPrice + (riskPoints * 2); // 1:2 RR
 
                     signal = {
+                        symbol: 'CRUDEOIL',
                         direction: OrderDirection.LONG,
                         entryPrice: currentPrice,
                         stopLoss,
                         takeProfit,
-                        confidence: this.calculateConfidence(patternsDetected, timeframeBias, 'bullish'),
+                        confidence: this.calculateConfidence(patternsDetected, timeframeBias, OrderDirection.LONG),
                         strategyName: this.name,
                         reason: `Bullish FVG retest in discount zone with ${structure1h.trend} 1H trend`,
                         patternsDetected,
@@ -151,11 +154,12 @@ export class ICTSMCHybridStrategy {
                 const takeProfit = currentPrice + (riskPoints * 2);
 
                 signal = {
+                    symbol: 'CRUDEOIL',
                     direction: OrderDirection.LONG,
                     entryPrice: currentPrice,
                     stopLoss,
                     takeProfit,
-                    confidence: this.calculateConfidence(patternsDetected, timeframeBias, 'bullish'),
+                    confidence: this.calculateConfidence(patternsDetected, timeframeBias, OrderDirection.LONG),
                     strategyName: this.name,
                     reason: 'Bullish liquidity grab with reversal confirmation',
                     patternsDetected,
@@ -187,11 +191,12 @@ export class ICTSMCHybridStrategy {
                     const takeProfit = currentPrice - (riskPoints * 2);
 
                     signal = {
+                        symbol: 'CRUDEOIL',
                         direction: OrderDirection.SHORT,
                         entryPrice: currentPrice,
                         stopLoss,
                         takeProfit,
-                        confidence: this.calculateConfidence(patternsDetected, timeframeBias, 'bearish'),
+                        confidence: this.calculateConfidence(patternsDetected, timeframeBias, OrderDirection.SHORT),
                         strategyName: this.name,
                         reason: `Bearish FVG retest in premium zone with ${structure1h.trend} 1H trend`,
                         patternsDetected,
@@ -217,11 +222,12 @@ export class ICTSMCHybridStrategy {
                 const takeProfit = currentPrice - (riskPoints * 2);
 
                 signal = {
+                    symbol: 'CRUDEOIL',
                     direction: OrderDirection.SHORT,
                     entryPrice: currentPrice,
                     stopLoss,
                     takeProfit,
-                    confidence: this.calculateConfidence(patternsDetected, timeframeBias, 'bearish'),
+                    confidence: this.calculateConfidence(patternsDetected, timeframeBias, OrderDirection.SHORT),
                     strategyName: this.name,
                     reason: 'Bearish liquidity grab with reversal confirmation',
                     patternsDetected,
@@ -262,11 +268,7 @@ export class ICTSMCHybridStrategy {
 
         // Generate 'Why NOT' explanation if no signal
         if (!result.shouldTrade) {
-            if (structure1h.trend === 'neutral') {
-                result.explanation = 'Market condition is ranging/neutral (1H Trend)';
-            } else if (structure1h.trend !== structure15m.trend) {
-                result.explanation = `Timeframe mismatch: 1H is ${structure1h.trend} but 15M is ${structure15m.trend}`;
-            } else if (overallTrend === 'bullish' && !inDiscount) {
+            if (overallTrend === 'bullish' && !inDiscount) {
                 result.explanation = 'Bullish trend but price is in Premium (expensive) - waiting for pullback';
             } else if (overallTrend === 'bearish' && !inPremium) {
                 result.explanation = 'Bearish trend but price is in Discount (cheap) - waiting for bounce';
@@ -284,16 +286,17 @@ export class ICTSMCHybridStrategy {
     private calculateConfidence(
         patterns: PatternDetection[],
         timeframeBias: Record<string, string>,
-        direction: 'bullish' | 'bearish'
+        direction: OrderDirection
     ): number {
         let confidence = 0;
+        const dirStr = direction === OrderDirection.LONG ? 'bullish' : 'bearish';
 
         // Pattern confidence (max 50 points)
         const avgPatternConfidence = patterns.reduce((sum, p) => sum + p.confidence, 0) / patterns.length;
         confidence += avgPatternConfidence * 50;
 
         // Timeframe alignment (max 30 points)
-        const alignedTFs = Object.values(timeframeBias).filter(bias => bias === direction).length;
+        const alignedTFs = Object.values(timeframeBias).filter(bias => bias === dirStr).length;
         confidence += (alignedTFs / 4) * 30;
 
         // Multiple patterns bonus (max 20 points)

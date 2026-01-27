@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { motion } from 'framer-motion';
-import { TrendingUp, Award, AlertTriangle, BarChart3, Clock } from 'lucide-react';
+import { LuTrendingUp, LuAward, LuCircleAlert, LuActivity, LuClock } from "react-icons/lu";
 
 export function PerformanceDashboard() {
     const { tradeHistory, equityCurve, accountSize } = useStore();
@@ -32,25 +32,25 @@ export function PerformanceDashboard() {
                     label="Portfolio Equity"
                     value={`₹${(accountSize + stats.totalPnL).toLocaleString()}`}
                     sub={`${stats.totalPnL >= 0 ? '+' : ''}₹${stats.totalPnL.toLocaleString()}`}
-                    icon={<TrendingUp className="text-accent" size={16} />}
+                    icon={<LuTrendingUp className="text-accent" size={16} />}
                 />
                 <StatCard
                     label="Win Rate"
                     value={`${stats.winRate.toFixed(1)}%`}
                     sub={`${stats.totalTrades} Trades`}
-                    icon={<Award className="text-green-400" size={16} />}
+                    icon={<LuAward className="text-green-400" size={16} />}
                 />
                 <StatCard
                     label="Avg R-Mult"
                     value={`${stats.avgR}R`}
                     sub="Efficiency"
-                    icon={<BarChart3 className="text-indigo-400" size={16} />}
+                    icon={<LuActivity className="text-indigo-400" size={16} />}
                 />
                 <StatCard
                     label="Discipline"
                     value={`${Math.max(0, 100 - (stats.violations * 10))}%`}
                     sub={`${stats.violations} Breaches`}
-                    icon={<AlertTriangle className={stats.violations > 0 ? 'text-red-500 animate-pulse' : 'text-white/20'} size={16} />}
+                    icon={<LuCircleAlert className={stats.violations > 0 ? 'text-red-500 animate-pulse' : 'text-white/20'} size={16} />}
                 />
             </div>
 
@@ -123,7 +123,7 @@ export function PerformanceDashboard() {
                                 tradeHistory.slice(-10).reverse().map(trade => (
                                     <tr key={trade.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                                         <td className="py-3 text-white/40 flex items-center gap-2">
-                                            <Clock size={10} />
+                                            <LuClock size={10} />
                                             {new Date(trade.timestamp).toLocaleTimeString()}
                                         </td>
                                         <td className="py-3">

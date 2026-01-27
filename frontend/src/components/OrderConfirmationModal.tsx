@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, X, TrendingUp, TrendingDown, ShieldAlert } from 'lucide-react';
+import { LuShieldCheck, LuX, LuTrendingUp, LuTrendingDown, LuShieldAlert } from "react-icons/lu";
 import { useStore } from '../store/useStore';
 import { HoldToConfirm } from './HoldToConfirm';
 
@@ -33,7 +33,7 @@ export function OrderConfirmationModal() {
                     <div className={`p-6 border-b border-white/5 flex items-center justify-between ${isBuy ? 'bg-success/10' : 'bg-red-500/10'}`}>
                         <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isBuy ? 'bg-success/20 text-success' : 'bg-red-500/20 text-red-500'}`}>
-                                {isBuy ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                                {isBuy ? <LuTrendingUp size={20} /> : <LuTrendingDown size={20} />}
                             </div>
                             <div>
                                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Confirm {pendingTrade.side}</h3>
@@ -41,7 +41,7 @@ export function OrderConfirmationModal() {
                             </div>
                         </div>
                         <button onClick={cancelTrade} className="text-white/20 hover:text-white transition-colors">
-                            <X size={20} />
+                            <LuX size={20} />
                         </button>
                     </div>
 
@@ -81,14 +81,14 @@ export function OrderConfirmationModal() {
                         {/* Confluence Check */}
                         <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <ShieldCheck size={14} className="text-accent" />
+                                <LuShieldCheck size={14} className="text-accent" />
                                 <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">Confluence Score</span>
                             </div>
                             <span className="text-xs font-black text-accent">{pendingTrade.confluenceSnapshot}/100</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">
-                            <ShieldAlert size={12} className="text-yellow-500" />
+                            <LuShieldAlert size={12} className="text-yellow-500" />
                             <span>Institutional Integrity Check Passed</span>
                         </div>
 

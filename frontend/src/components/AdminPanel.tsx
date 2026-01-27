@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { motion } from 'framer-motion';
-import { X, Shield, Settings, Database, Activity, Lock, EyeOff } from 'lucide-react';
+import { LuX, LuShield, LuSettings, LuDatabase, LuActivity, LuLock, LuEyeOff } from "react-icons/lu";
 
 export function AdminPanel() {
     const { isAdminPanelOpen, setUI, isCovertMode, toggleCovertMode } = useStore();
@@ -26,7 +26,7 @@ export function AdminPanel() {
                 <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-accent/10 to-transparent">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center border border-accent/20">
-                            <Shield className="text-accent" size={20} />
+                            <LuShield className="text-accent" size={20} />
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-white uppercase tracking-tighter">{isCovertMode ? 'SECURE_TERM_V9' : 'Admin Operator Terminal'}</h2>
@@ -37,32 +37,32 @@ export function AdminPanel() {
                         onClick={() => setUI({ isAdminPanelOpen: false })}
                         className="p-2 hover:bg-white/5 rounded-xl transition-colors"
                     >
-                        <X size={20} className="text-white/20" />
+                        <LuX size={20} className="text-white/20" />
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="p-8 grid grid-cols-2 gap-6">
                     <AdminCard
-                        icon={<Activity size={18} />}
+                        icon={<LuActivity size={18} />}
                         title="System Health"
                         status="OPTIONAL"
                         desc="Main loop latency: 12ms. WebSocket connected."
                     />
                     <AdminCard
-                        icon={<Database size={18} />}
+                        icon={<LuDatabase size={18} />}
                         title="Data Persistence"
                         status="ACTIVE"
                         desc="Auto-save to LocalStorage enabled. Cache: 45MB."
                     />
                     <AdminCard
-                        icon={<Settings size={18} />}
+                        icon={<LuSettings size={18} />}
                         title="Risk Engine"
                         status="GATED"
                         desc="Hard-limits for MCX sessions are enforced."
                     />
                     <AdminCard
-                        icon={<Lock size={18} />}
+                        icon={<LuLock size={18} />}
                         title="Auth Protocol"
                         status="SECURE"
                         desc="Session type: Private Local Administrator."
@@ -72,7 +72,7 @@ export function AdminPanel() {
                         className="cursor-pointer"
                     >
                         <AdminCard
-                            icon={<EyeOff size={18} />}
+                            icon={<LuEyeOff size={18} />}
                             title="Visual Security"
                             status={isCovertMode ? "ACTIVE" : "DISABLED"}
                             desc={isCovertMode ? "Covert Glyph Mode Enable. UI Obfuscated." : "Standard UI Mode. Click to Obfuscate."}

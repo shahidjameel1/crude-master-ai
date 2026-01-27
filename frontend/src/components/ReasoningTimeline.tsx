@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GitCommit, Pause, Search, RefreshCw, Zap, ShieldAlert, Circle } from 'lucide-react';
+import { LuActivity, LuPause, LuSearch, LuRefreshCw, LuZap, LuShieldAlert, LuCircle } from "react-icons/lu";
 
 export function ReasoningTimeline() {
-    const { agentReasoning, agentState } = useStore();
+    const { agentReasoning } = useStore();
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to top of list as new logs come in
@@ -16,19 +16,19 @@ export function ReasoningTimeline() {
 
     const getIcon = (state: string) => {
         switch (state) {
-            case 'SEARCHING': return <Search size={14} className="text-cyan-400" />;
-            case 'ANALYZING': return <RefreshCw size={14} className="text-yellow-400" />;
-            case 'EXECUTING': return <Zap size={14} className="text-red-500" />;
-            case 'PAUSED': return <Pause size={14} className="text-white/40" />;
-            case 'ERROR': return <ShieldAlert size={14} className="text-red-600" />;
-            default: return <Circle size={14} className="text-gray-500" />;
+            case 'SEARCHING': return <LuSearch size={14} className="text-cyan-400" />;
+            case 'ANALYZING': return <LuRefreshCw size={14} className="text-yellow-400" />;
+            case 'EXECUTING': return <LuZap size={14} className="text-red-500" />;
+            case 'PAUSED': return <LuPause size={14} className="text-white/40" />;
+            case 'ERROR': return <LuShieldAlert size={14} className="text-red-600" />;
+            default: return <LuCircle size={14} className="text-gray-500" />;
         }
     };
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-white/5 rounded-2xl border border-white/5">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-black/20">
-                <GitCommit size={14} className="text-accent" />
+                <LuActivity size={14} className="text-accent" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Agent Reasoning</span>
             </div>
 
@@ -58,8 +58,8 @@ export function ReasoningTimeline() {
                                 <div className="flex-1 min-w-0 pb-2">
                                     <div className="flex items-center justify-between gap-2 mb-0.5">
                                         <span className={`text-[9px] font-bold uppercase tracking-wider ${log.state === 'EXECUTING' ? 'text-red-400' :
-                                                log.state === 'ANALYZING' ? 'text-yellow-400' :
-                                                    'text-white/60'
+                                            log.state === 'ANALYZING' ? 'text-yellow-400' :
+                                                'text-white/60'
                                             }`}>
                                             {log.state}
                                         </span>

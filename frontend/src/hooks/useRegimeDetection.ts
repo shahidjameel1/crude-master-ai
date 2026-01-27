@@ -7,8 +7,7 @@ export const useRegimeDetection = () => {
         updateRegimeState,
         addReasoningLog,
         confluenceScore,
-        currentPrice,
-        agentState
+        currentPrice
     } = useStore();
 
     useEffect(() => {

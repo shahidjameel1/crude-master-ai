@@ -15,7 +15,7 @@ export const useConfidenceDecay = () => {
             const now = Date.now();
             const timeSinceLastSetup = now - confidenceDecayState.lastValidSetup;
             const DECAY_THRESHOLD = 120000; // 2 minutes without valid setup
-            const DECAY_INTERVAL = 10000; // Decay every 10 seconds
+            // const DECAY_INTERVAL = 10000; // Decay every 10 seconds
 
             // Start decaying if no valid setup for 2+ minutes
             if (timeSinceLastSetup > DECAY_THRESHOLD && confidenceDetail.score > 0) {

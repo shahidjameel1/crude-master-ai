@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { Bell, X, CheckCircle, AlertTriangle, AlertOctagon, Info } from 'lucide-react';
+import { LuBell, LuX, LuCircleCheck, LuTriangleAlert, LuOctagonAlert, LuInfo } from "react-icons/lu";
 
 export function NotificationDrawer() {
     const { isNotificationDrawerOpen, setUI, notifications } = useStore();
@@ -23,10 +23,10 @@ export function NotificationDrawer() {
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'SUCCESS': return <CheckCircle size={16} className="text-green-400" />;
-            case 'WARNING': return <AlertTriangle size={16} className="text-yellow-400" />;
-            case 'ERROR': return <AlertOctagon size={16} className="text-red-400" />;
-            default: return <Info size={16} className="text-blue-400" />;
+            case 'SUCCESS': return <LuCircleCheck size={16} className="text-green-400" />;
+            case 'WARNING': return <LuTriangleAlert size={16} className="text-yellow-400" />;
+            case 'ERROR': return <LuOctagonAlert size={16} className="text-red-400" />;
+            default: return <LuInfo size={16} className="text-blue-400" />;
         }
     };
 
@@ -63,7 +63,7 @@ export function NotificationDrawer() {
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/20">
                             <div className="flex items-center gap-2">
-                                <Bell size={16} className="text-accent" />
+                                <LuBell size={16} className="text-accent" />
                                 <span className="text-xs font-black uppercase tracking-widest text-white/80">System Alerts</span>
                                 <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-bold text-white/60">{notifications.length}</span>
                             </div>
@@ -71,7 +71,7 @@ export function NotificationDrawer() {
                                 onClick={() => setUI({ isNotificationDrawerOpen: false })}
                                 className="p-1 hover:bg-white/5 rounded transition-colors"
                             >
-                                <X size={16} className="text-white/40 hover:text-white" />
+                                <LuX size={16} className="text-white/40 hover:text-white" />
                             </button>
                         </div>
 
@@ -79,7 +79,7 @@ export function NotificationDrawer() {
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-40 text-white/20 gap-2">
-                                    <Bell size={24} className="opacity-20" />
+                                    <LuBell size={24} className="opacity-20" />
                                     <span className="text-[10px] uppercase tracking-widest font-bold">No New Alerts</span>
                                 </div>
                             ) : (

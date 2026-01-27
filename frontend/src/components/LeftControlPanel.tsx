@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { Layers, Target, Plus } from 'lucide-react';
+import { LuLayers, LuTarget, LuPlus } from "react-icons/lu";
 
 import { RiskCalculator } from './RiskCalculator';
 import { AutomationDashboard } from './AutomationDashboard';
@@ -63,7 +63,7 @@ export function LeftControlPanel() {
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between px-1 mb-1">
                     <div className="flex items-center gap-2">
-                        <Layers size={14} className="text-accent" />
+                        <LuLayers size={14} className="text-accent" />
                         <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Strategy Stack</h2>
                     </div>
                     <button
@@ -71,7 +71,7 @@ export function LeftControlPanel() {
                         className="p-1 hover:bg-white/10 rounded transition-all group"
                         title="Create New Strategy"
                     >
-                        <Plus size={14} className="text-white/40 group-hover:text-accent" />
+                        <LuPlus size={14} className="text-white/40 group-hover:text-accent" />
                     </button>
                 </div>
                 {strategies.map((s) => (
@@ -152,7 +152,7 @@ function StrategyCard({ strategy, onToggle, onWeightChange }: {
         >
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                    <div className={`w - 1.5 h - 1.5 rounded - full ${strategy.enabled ? 'bg-accent animate-pulse' : 'bg-white/20'} `} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${strategy.enabled ? 'bg-accent animate-pulse' : 'bg-white/20'}`} />
                     <span className="text-[10px] font-black text-white uppercase tracking-tighter">{strategy.name}</span>
                 </div>
                 <input
@@ -175,7 +175,7 @@ function StrategyCard({ strategy, onToggle, onWeightChange }: {
             </div>
 
             <div className="absolute top-0 right-0 p-2 opacity-10 blur-[1px]">
-                <Target size={48} className="text-white" />
+                <LuTarget size={48} className="text-white" />
             </div>
         </motion.div>
     );

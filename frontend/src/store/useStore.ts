@@ -9,6 +9,17 @@ export type AgentMode = 'OBSERVE' | 'SEARCH' | 'PREPARE' | 'STRIKE' | 'DEFENSIVE
 export type AgentState = 'IDLE' | 'SEARCHING' | 'ANALYZING' | 'READY' | 'EXECUTING' | 'COOLDOWN' | 'ERROR';
 export type RiskStatus = 'SAFE' | 'RISKY';
 export type ContractSymbol = 'CRUDEOILM' | 'CRUDEOIL';
+export type DiagnosticStatus = 'OK' | 'WARN' | 'FAIL' | 'STALE' | 'DOWN' | 'ACTIVE' | 'IDLE' | 'STALLED' | 'READY' | 'BLOCKED' | 'UNREACHABLE' | 'DEGRADED';
+
+export interface SystemDiagnostics {
+    auth: 'OK' | 'WARN' | 'FAIL';
+    marketData: 'OK' | 'STALE' | 'DOWN';
+    agent: 'ACTIVE' | 'IDLE' | 'STALLED';
+    execution: 'READY' | 'BLOCKED';
+    ui: 'OK' | 'DEGRADED';
+    backend: 'OK' | 'UNREACHABLE';
+    lastCheck: number;
+}
 
 export interface ContractConfig {
     symbol: ContractSymbol;
@@ -189,6 +200,8 @@ export interface CockpitState {
     chartStatus: 'LOADING' | 'READY' | 'ERROR';
     deviceType: 'MOBILE' | 'TABLET' | 'DESKTOP';
     orientation: 'PORTRAIT' | 'LANDSCAPE';
+    isQAPanelOpen: boolean;
+    systemDiagnostics: SystemDiagnostics;
 
     // Performance & Health
     latencyMs: number;
@@ -256,6 +269,7 @@ export interface CockpitState {
     addSessionRating: (rating: any) => void;
     updateRegimeState: (state: Partial<CockpitState['regimeState']>) => void;
     setSessionProfile: (profile: 'ASIA' | 'LONDON' | 'NY') => void;
+    updateDiagnostics: (diagnostics: Partial<SystemDiagnostics>) => void;
 }
 
 // --- STORE ---
@@ -376,6 +390,16 @@ export const useStore = create<CockpitState>((set, get) => ({
     chartStatus: 'LOADING',
     deviceType: 'DESKTOP',
     orientation: 'PORTRAIT',
+    isQAPanelOpen: false,
+    systemDiagnostics: {
+        auth: 'FAIL',
+        marketData: 'DOWN',
+        agent: 'IDLE',
+        execution: 'BLOCKED',
+        ui: 'OK',
+        backend: 'UNREACHABLE',
+        lastCheck: Date.now()
+    },
 
     latencyMs: 0,
     protocolVersion: 'FRIDAY-X V1.0',
@@ -725,5 +749,27 @@ export const useStore = create<CockpitState>((set, get) => ({
     addEvolutionLog: (log) => set((s) => ({ evolutionLog: [{ timestamp: Date.now(), ...log }, ...s.evolutionLog].slice(0, 100) })),
     addSessionRating: (rating) => set((s) => ({ sessionRatings: [{ sessionDate: Date.now(), ...rating }, ...s.sessionRatings].slice(0, 30) })),
     updateRegimeState: (state) => set((s) => ({ regimeState: { ...s.regimeState, ...state } })),
-    setSessionProfile: (profile) => set({ sessionProfile: profile })
+    setSessionProfile: (profile) => set({ sessionProfile: profile }),
+    updateDiagnostics: (diagnostics) => set((s) => {
+        const nextDiagnostics = { ...s.systemDiagnostics, ...diagnostics, lastCheck: Date.now() };
+
+        // SAFETY AUTO-PAUSE: If critical failure, force Agent to IDLE
+        let nextAgentState = s.agentState;
+        let nextAgentReason = s.agentReason;
+
+        const isCriticalFailure = nextDiagnostics.auth === 'FAIL' ||
+            nextDiagnostics.marketData === 'DOWN' ||
+            nextDiagnostics.backend === 'UNREACHABLE';
+
+        if (isCriticalFailure && s.agentState !== 'IDLE') {
+            nextAgentState = 'IDLE';
+            nextAgentReason = 'SAFETY PAUSE: System Integrity Compromised';
+        }
+
+        return {
+            systemDiagnostics: nextDiagnostics,
+            agentState: nextAgentState,
+            agentReason: nextAgentReason
+        };
+    })
 }));

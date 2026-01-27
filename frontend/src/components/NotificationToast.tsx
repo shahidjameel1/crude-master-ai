@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Info, CheckCircle, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { LuX, LuInfo, LuCircleCheck, LuTriangleAlert, LuOctagonAlert } from "react-icons/lu";
 
 export function NotificationToast() {
     const { notifications, removeNotification } = useStore();
@@ -18,15 +18,15 @@ export function NotificationToast() {
                         className="pointer-events-auto"
                     >
                         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl min-w-[300px] max-w-[400px] ${n.type === 'SUCCESS' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                                n.type === 'WARNING' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
-                                    n.type === 'ERROR' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                            n.type === 'WARNING' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
+                                n.type === 'ERROR' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
                             }`}>
                             <div className="shrink-0">
-                                {n.type === 'SUCCESS' && <CheckCircle size={18} />}
-                                {n.type === 'WARNING' && <AlertTriangle size={18} />}
-                                {n.type === 'ERROR' && <AlertOctagon size={18} />}
-                                {n.type === 'INFO' && <Info size={18} />}
+                                {n.type === 'SUCCESS' && <LuCircleCheck size={18} />}
+                                {n.type === 'WARNING' && <LuTriangleAlert size={18} />}
+                                {n.type === 'ERROR' && <LuOctagonAlert size={18} />}
+                                {n.type === 'INFO' && <LuInfo size={18} />}
                             </div>
 
                             <div className="flex-1">
@@ -38,7 +38,7 @@ export function NotificationToast() {
                                 onClick={() => removeNotification(n.id)}
                                 className="shrink-0 p-1 hover:bg-white/5 rounded-lg transition-colors"
                             >
-                                <X size={14} className="text-white/20" />
+                                <LuX size={14} className="text-white/20" />
                             </button>
                         </div>
                     </motion.div>

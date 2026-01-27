@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import { CheckCircle2, ShieldCheck } from 'lucide-react';
+import { LuCircleCheck, LuShieldCheck } from "react-icons/lu";
 
 interface HoldToConfirmProps {
     onConfirm: () => void;
@@ -69,12 +69,12 @@ export function HoldToConfirm({ onConfirm, onCancel, text, holdTime = 2500, colo
             <div className="relative z-10 flex items-center justify-center gap-3 px-6 h-full">
                 {progress >= 1 ? (
                     <>
-                        <CheckCircle2 className="text-white" size={20} />
+                        <LuCircleCheck className="text-white" size={20} />
                         <span className="text-white">Confirmed</span>
                     </>
                 ) : (
                     <>
-                        <ShieldCheck className={isHolding ? 'text-white' : 'text-white/40'} size={20} />
+                        <LuShieldCheck className={isHolding ? 'text-white' : 'text-white/40'} size={20} />
                         <span className={isHolding ? 'text-white' : 'text-white/60'}>
                             {isHolding ? 'Holding...' : text}
                         </span>

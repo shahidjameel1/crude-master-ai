@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
+// TEMP COMMENT TO TRIGGER TSC RE-CHECK
 import { IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import { useStore, Drawing } from '../store/useStore';
 import { getChart } from '../hooks/useChartSingleton';
@@ -21,11 +22,8 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     const wsRef = useRef<WebSocket | null>(null);
     const [liveCandle, setLiveCandle] = useState<any | null>(null);
 
-
-
     // Zustand Store
     const {
-        updatePrice,
         setMarketData,
         is3DMode,
         isInsightDrawerOpen,
@@ -165,6 +163,11 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     }, [activeTimeframe, setMarketData, setUI]);
 
     const connectWS = useCallback(() => {
+        // Prevent multiple simultaneous connections
+        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+        if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
+
+        console.log("🔌 Initializing Stable WebSocket Stream...");
         const ws = new WebSocket('ws://localhost:3001');
         wsRef.current = ws;
 
@@ -172,10 +175,11 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
         ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
+                const store = useStore.getState();
 
                 // Handle market status
                 if (message.type === 'MARKET_STATUS') {
-                    setMarketData({ isMarketOpen: message.isOpen });
+                    store.setMarketData({ isMarketOpen: message.isOpen });
                 }
 
                 // Handle candle updates from finalization service
@@ -185,28 +189,29 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                     // Update live candle state for indicator
                     setLiveCandle(liveCandleData);
 
-                    // Update store with candle data (triggers strategy recalculation)
-                    setMarketData({
+                    // Update store with candle data
+                    store.setMarketData({
                         confirmedCandles,
                         liveCandle: liveCandleData
                     });
 
-                    // Update chart with all candles (confirmed + live)
-                    if (candleSeriesRef.current && confirmedCandles.length > 0) {
-                        const allCandles = [...confirmedCandles];
-                        if (liveCandleData) {
-                            allCandles.push(liveCandleData);
+                    // STABLE CHART UPDATE: 
+                    // 1. If we have new confirmed candles, update the bulk to ensure NO DRIFT
+                    // 2. Then update only the live part
+                    if (candleSeriesRef.current) {
+                        if (confirmedCandles.length > 0) {
+                            // Only set data if the length has changed or it's a new timeframe
+                            // To optimize, we can check if the last confirmed candle time is newer
+                            candleSeriesRef.current.setData(confirmedCandles);
                         }
 
-                        // Update only the last few candles to avoid full redraw
-                        const lastCandle = allCandles[allCandles.length - 1];
-                        if (lastCandle) {
+                        if (liveCandleData) {
                             candleSeriesRef.current.update({
-                                time: lastCandle.time as Time,
-                                open: lastCandle.open,
-                                high: lastCandle.high,
-                                low: lastCandle.low,
-                                close: lastCandle.close
+                                time: liveCandleData.time as Time,
+                                open: liveCandleData.open,
+                                high: liveCandleData.high,
+                                low: liveCandleData.low,
+                                close: liveCandleData.close
                             });
                         }
                     }
@@ -216,34 +221,33 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
                     const tick = message.data;
                     const time = Math.floor(tick.timestamp / 1000 / 60) * 60;
 
-                    const state = useStore.getState();
-                    let cH = state.sessionHigh;
-                    let cL = state.sessionLow;
-
                     // Activity Signal for provable agent activity
-                    state.setUI({ lastAgentAction: Date.now() });
+                    store.setUI({ lastAgentAction: Date.now() });
 
-                    if (tick.price > cH) { cH = tick.price; setMarketData({ sessionHigh: cH }); }
-                    if (tick.price < cL) { cL = tick.price; setMarketData({ sessionLow: cL }); }
+                    if (tick.price > store.sessionHigh) { store.setMarketData({ sessionHigh: tick.price }); }
+                    if (tick.price < store.sessionLow) { store.setMarketData({ sessionLow: tick.price }); }
 
                     const tickVol = tick.volume - lastVolume;
                     if (tickVol > 0) {
                         const vwapVal = tick.price;
                         vwapSeriesRef.current?.update({ time: time as any, value: vwapVal });
-                        updatePrice(tick.price, vwapVal);
+                        store.updatePrice(tick.price, vwapVal);
 
-                        // Active Position Monitoring (Trailing Stop)
                         if (position) {
                             updateTrailingStop(tick.price);
                         }
                     }
-
                 }
             } catch (e) {
                 console.error('WS MSG Error', e);
             }
         };
-    }, [setMarketData, updatePrice, position, updateTrailingStop]);
+
+        ws.onclose = () => {
+            console.log("🔌 WS Disconnected. Retrying in 5s...");
+            setTimeout(connectWS, 5000);
+        };
+    }, [position, updateTrailingStop]);
 
     useLayoutEffect(() => {
         if (!chartContainerRef.current) return;

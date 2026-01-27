@@ -1,4 +1,4 @@
-import { Power, Pause, Play, Settings, Sliders } from 'lucide-react';
+import { LuPower, LuPause, LuPlay, LuMenu } from "react-icons/lu";
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -8,22 +8,11 @@ export function ControlPanel() {
     const { automationMode, setAutomationMode } = useStore();
     const isAutoTrading = automationMode === 'AUTO';
     const [riskLevel, setRiskLevel] = useState(1);
-    const [glassMode, setGlassMode] = useState(false); // In real app, sync with store
+    // glassMode removed as unused
 
     // API handlers (mocked for now, replace with store actions)
-    const toggleGlassMode = async () => {
-        try {
-            await fetch('/api/security/glass-mode', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled: !glassMode }),
-                credentials: 'include'
-            });
-            setGlassMode(!glassMode);
-        } catch (e) {
-            console.error("Failed to toggle Glass Mode", e);
-        }
-    };
+    // API handlers (mocked for now, replace with store actions)
+    // toggleGlassMode removed as it was unused.
 
     const activateKillSwitch = async () => {
         if (!confirm("⚠️ ACTIVATE EMERGENCY KILL SWITCH? This will close all positions and lock the system.")) return;
@@ -44,12 +33,10 @@ export function ControlPanel() {
             <div>
                 <div className="flex items-center justify-between mb-6 border-b border-border pb-2 px-2">
                     <div className="flex items-center gap-2">
-                        <Sliders size={14} className="text-accent" />
+                        <LuMenu size={14} className="text-accent" />
                         <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary font-heading">Control matrix</h3>
                     </div>
-                    <motion.button whileHover={{ rotate: 45 }} className="text-text-tertiary hover:text-white">
-                        <Settings size={14} />
-                    </motion.button>
+                    {/* Settings button removed as unused */}
                 </div>
 
                 {/* Tactical Toggle Switch */}
@@ -126,11 +113,11 @@ export function ControlPanel() {
                     {isAutoTrading ? (
                         <>
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[ripple_2s_infinite]" />
-                            <Pause size={18} fill="currentColor" /> PAUSE SYSTEM MATRIX
+                            <LuPause size={18} fill="currentColor" /> PAUSE SYSTEM MATRIX
                         </>
                     ) : (
                         <>
-                            <Play size={18} fill="currentColor" /> INITIATE AUTO-TRADE
+                            <LuPlay size={18} fill="currentColor" /> INITIATE AUTO-TRADE
                         </>
                     )}
                 </motion.button>
@@ -141,7 +128,7 @@ export function ControlPanel() {
                     onClick={activateKillSwitch}
                     className="w-full py-3 bg-error/10 text-error border border-error/50 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-error/20 transition-colors"
                 >
-                    <Power size={14} /> Emergency Neural Cut
+                    <LuPower size={14} /> Emergency Neural Cut
                 </motion.button>
             </div>
         </div>

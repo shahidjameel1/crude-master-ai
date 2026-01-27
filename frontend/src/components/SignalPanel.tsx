@@ -1,4 +1,4 @@
-import { Zap, ArrowBigUp, ArrowBigDown } from 'lucide-react';
+import { LuZap, LuArrowUp, LuArrowDown } from "react-icons/lu";
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface Signal {
@@ -24,7 +24,7 @@ export function SignalPanel({ signals = [] }: SignalPanelProps) {
             {/* Header */}
             <div className="p-4 border-b border-border bg-black/40 flex justify-between items-center backdrop-blur-md">
                 <div className="flex items-center gap-2">
-                    <Zap size={16} className="text-cyan animate-pulse shadow-cyan-glow" />
+                    <LuZap size={16} className="text-cyan animate-pulse shadow-cyan-glow" />
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-white font-heading">Active Signals</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export function SignalPanel({ signals = [] }: SignalPanelProps) {
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-lg ${signal.type === 'LONG' ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
-                                        {signal.type === 'LONG' ? <ArrowBigUp size={20} fill="currentColor" /> : <ArrowBigDown size={20} fill="currentColor" />}
+                                        {signal.type === 'LONG' ? <LuArrowUp size={20} fill="currentColor" /> : <LuArrowDown size={20} fill="currentColor" />}
                                     </div>
                                     <div>
                                         <div className={`font-bold text-sm ${signal.type === 'LONG' ? 'text-success' : 'text-error'}`}>
@@ -131,7 +131,7 @@ export function SignalPanel({ signals = [] }: SignalPanelProps) {
                             }}
                             transition={{ duration: 3, repeat: Infinity }}
                         >
-                            <Zap size={40} className="text-text-tertiary mb-4" />
+                            <LuZap size={40} className="text-text-tertiary mb-4" />
                         </motion.div>
                         <div className="text-center text-text-tertiary font-bold text-[10px] uppercase tracking-widest">
                             Scanning market for ICT/SMC patterns...

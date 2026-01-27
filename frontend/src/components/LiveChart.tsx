@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi } from 'lightweight-charts';
-import { Maximize, Camera } from 'lucide-react';
+import { LuMaximize, LuCamera } from "react-icons/lu";
 
 interface ChartProps {
     data: any[]; // Candle data
@@ -118,10 +118,10 @@ export function LiveChart({ data, symbol = 'CRUDEOIL' }: ChartProps) {
             {/* Actions */}
             <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button className="p-2 bg-neutral-800 rounded border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 transition-colors" title="Screenshot">
-                    <Camera size={16} />
+                    <LuCamera size={16} />
                 </button>
                 <button className="p-2 bg-neutral-800 rounded border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 transition-colors" title="Fullscreen">
-                    <Maximize size={16} />
+                    <LuMaximize size={16} />
                 </button>
             </div>
 

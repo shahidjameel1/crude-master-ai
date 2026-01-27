@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowDownRight, Filter } from 'lucide-react';
+import { LuArrowUpRight, LuArrowDownRight, LuFilter } from "react-icons/lu";
 import { Trade } from '../hooks/usePaperTrading';
 
 interface TradeJournalProps {
@@ -25,7 +25,7 @@ export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-medium text-neutral-400">Trade Journal</h3>
                 <button className="p-1.5 hover:bg-white/5 rounded text-neutral-500">
-                    <Filter size={16} />
+                    <LuFilter size={16} />
                 </button>
             </div>
 
@@ -47,7 +47,7 @@ export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
                                 <td className="p-2 text-neutral-400 font-mono">{trade.time}</td>
                                 <td className="p-2">
                                     <span className={`flex items-center gap-1 font-bold ${trade.type === 'LONG' ? 'text-primary' : 'text-rose-500'}`}>
-                                        {trade.type === 'LONG' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                        {trade.type === 'LONG' ? <LuArrowUpRight size={12} /> : <LuArrowDownRight size={12} />}
                                         {trade.type}
                                     </span>
                                 </td>
@@ -70,7 +70,7 @@ export function TradeJournal({ trades: rawTrades }: TradeJournalProps) {
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] text-neutral-500 font-mono">{trade.time}</span>
                                 <span className={`flex items-center gap-1 font-bold text-xs ${trade.type === 'LONG' ? 'text-primary' : 'text-rose-500'}`}>
-                                    {trade.type === 'LONG' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                    {trade.type === 'LONG' ? <LuArrowUpRight size={14} /> : <LuArrowDownRight size={14} />}
                                     {trade.type}
                                 </span>
                             </div>

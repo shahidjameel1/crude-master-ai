@@ -1,0 +1,13 @@
+src/components/PreTradeChecklist.tsx(3,20): error TS6133: 'LuShieldAlert' is declared but its value is never read.
+src/components/ReasoningTimeline.tsx(7,29): error TS6133: 'agentState' is declared but its value is never read.
+src/components/SignalReplay.tsx(3,10): error TS6133: 'LuTrendingUp' is declared but its value is never read.
+src/components/SignalReplay.tsx(3,24): error TS6133: 'LuTrendingDown' is declared but its value is never read.
+src/components/StrategyComparison.tsx(3,24): error TS6133: 'LuTrendingDown' is declared but its value is never read.
+src/components/StrategyCreatorWizard.tsx(3,18): error TS6133: 'AnimatePresence' is declared but its value is never read.
+src/components/StrategyPanel.tsx(1,23): error TS2305: Module '"../hooks/useStrategyEngine"' has no exported member 'StrategyConfig'.
+src/components/TopBar.tsx(7,1): error TS6133: 'AgentStatusPanel' is declared but its value is never read.
+src/components/TopBar.tsx(7,34): error TS2307: Cannot find module './AgentStatusPanel' or its corresponding type declarations.
+src/hooks/useConfidenceDecay.ts(18,19): error TS6133: 'DECAY_INTERVAL' is declared but its value is never read.
+src/hooks/usePatienceEngine.ts(9,9): error TS6133: 'tradeHistory' is declared but its value is never read.
+src/hooks/useRegimeDetection.ts(11,9): error TS6133: 'agentState' is declared but its value is never read.
+src/hooks/useStrategyEvolution.ts(24,69): error TS6133: 'value' is declared but its value is never read.

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, ShieldAlert, BadgeCheck, X } from 'lucide-react';
+import { LuCircleAlert, LuShieldAlert, LuBadgeCheck, LuX } from "react-icons/lu";
 import { ContractSymbol } from '../store/useStore';
 
 interface Props {
@@ -24,7 +24,7 @@ export function ContractSwitchModal({ isOpen, onClose, targetContract, currentCo
                     {/* Header */}
                     <div className="p-6 border-b border-white/5 flex items-center gap-4 bg-red-500/5">
                         <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
-                            <ShieldAlert size={24} />
+                            <LuShieldAlert size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-white uppercase tracking-tighter">Security Alert: Default Protocol Switch</h2>
@@ -47,19 +47,19 @@ export function ContractSwitchModal({ isOpen, onClose, targetContract, currentCo
 
                         <div className="space-y-3">
                             <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                                <AlertCircle size={16} className="text-yellow-500 shrink-0 mt-0.5" />
+                                <LuCircleAlert size={16} className="text-yellow-500 shrink-0 mt-0.5" />
                                 <div className="text-[11px] text-white/60 leading-relaxed">
                                     <strong className="text-white">Margin Impact:</strong> Switching from MINI to BIG contract increases margin requirement by 10x.
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                                <AlertCircle size={16} className="text-yellow-500 shrink-0 mt-0.5" />
+                                <LuCircleAlert size={16} className="text-yellow-500 shrink-0 mt-0.5" />
                                 <div className="text-[11px] text-white/60 leading-relaxed">
                                     <strong className="text-white">Agent Execution:</strong> The AI Agent will now place orders using the high-risk BIG contract.
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                                <BadgeCheck size={16} className="text-accent shrink-0 mt-0.5" />
+                                <LuBadgeCheck size={16} className="text-accent shrink-0 mt-0.5" />
                                 <div className="text-[11px] text-white/60 leading-relaxed">
                                     <strong className="text-white">Mandatory Verification:</strong> You are authorizing the system to engage in full-lot size execution.
                                 </div>
@@ -87,7 +87,7 @@ export function ContractSwitchModal({ isOpen, onClose, targetContract, currentCo
                     </div>
 
                     <button onClick={onClose} className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors">
-                        <X size={20} />
+                        <LuX size={20} />
                     </button>
                 </motion.div>
             </div>

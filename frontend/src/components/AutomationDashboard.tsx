@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Lock, Play, Square, History } from 'lucide-react';
+import { LuShield, LuLock, LuPlay, LuSquare, LuHistory } from "react-icons/lu";
 import { AutomationMode } from '../hooks/useAutomationEngine';
 import { getAuditLogs, AuditEntry } from '../logic/AuditLogStore';
 
@@ -43,7 +43,7 @@ export function AutomationDashboard({ mode, onModeChange, prerequisites, onKillS
             {/* Header with Kill Switch */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Shield className={mode !== 'OFF' ? 'text-accent animate-pulse' : 'text-white/20'} size={18} />
+                    <LuShield className={mode !== 'OFF' ? 'text-accent animate-pulse' : 'text-white/20'} size={18} />
                     <h2 className="text-sm font-bold text-white uppercase tracking-widest">Automation Engine</h2>
                 </div>
                 <button
@@ -58,7 +58,7 @@ export function AutomationDashboard({ mode, onModeChange, prerequisites, onKillS
             {!prerequisites.isUnlocked && (
                 <div className="p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
                     <div className="flex items-center gap-2 mb-2">
-                        <Lock size={14} className="text-yellow-500" />
+                        <LuLock size={14} className="text-yellow-500" />
                         <span className="text-[10px] font-bold text-yellow-500 uppercase">Automation Locked</span>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -82,7 +82,7 @@ export function AutomationDashboard({ mode, onModeChange, prerequisites, onKillS
                             ${(!prerequisites.isUnlocked) ? 'opacity-20 cursor-not-allowed grayscale' : ''}
                         `}
                     >
-                        {mode === m ? <Square size={12} fill="currentColor" /> : <Play size={12} />}
+                        {mode === m ? <LuSquare size={12} fill="currentColor" /> : <LuPlay size={12} />}
                         {m.replace('_', ' ')}
                     </button>
                 ))}
@@ -91,7 +91,7 @@ export function AutomationDashboard({ mode, onModeChange, prerequisites, onKillS
             {/* Real-time Audit Trail */}
             <div className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center gap-2 mb-2 text-white/40">
-                    <History size={14} />
+                    <LuHistory size={14} />
                     <span className="text-[10px] uppercase font-bold tracking-widest">Live Audit Trail</span>
                 </div>
                 <div className="flex-1 overflow-y-auto bg-black/40 rounded-lg border border-white/5 p-2 font-mono text-[9px]">

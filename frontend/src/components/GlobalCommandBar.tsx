@@ -1,4 +1,4 @@
-import { User, ChevronDown, Lock, Menu, X, Play, Pause, AlertOctagon, Bell } from 'lucide-react';
+import { LuUser, LuChevronDown, LuLock, LuMenu, LuX, LuPlay, LuPause, LuOctagonAlert, LuBell } from "react-icons/lu";
 import { useStore, ContractSymbol } from '../store/useStore';
 import { useHeartbeat } from '../hooks/useHeartbeat';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,7 +24,7 @@ export function GlobalCommandBar() {
         notifications,
         isNotificationDrawerOpen,
         isMarketOpen,
-        systemMode
+        systemDiagnostics
     } = useStore();
 
     const heartbeat = useHeartbeat();
@@ -38,6 +38,16 @@ export function GlobalCommandBar() {
     // For visual feedback:
     const showAutoEngaged = isMarketOpen && automationMode === 'AUTO';
 
+    // Health Logic
+    const getHealthState = () => {
+        const { auth, marketData, agent, backend } = systemDiagnostics;
+        if (auth === 'FAIL' || marketData === 'DOWN' || backend === 'UNREACHABLE') return 'UNSAFE';
+        if (marketData === 'STALE' || agent === 'STALLED') return 'DEGRADED';
+        return 'HEALTHY';
+    };
+
+    const health = getHealthState();
+
     return (
         <div className="fixed top-0 left-0 right-0 h-10 bg-[#050505] border-b border-white/5 z-[100] flex items-center justify-between px-4 select-none">
             {/* LEFT: Instrument Control */}
@@ -46,7 +56,7 @@ export function GlobalCommandBar() {
                     onClick={() => setUI({ isDrawerOpen: !isDrawerOpen })}
                     className="p-1 hover:bg-white/5 rounded md:hidden"
                 >
-                    {isDrawerOpen ? <X size={16} className="text-accent" /> : <Menu size={16} className="text-white/60" />}
+                    {isDrawerOpen ? <LuX size={16} className="text-accent" /> : <LuMenu size={16} className="text-white/60" />}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -56,22 +66,24 @@ export function GlobalCommandBar() {
                         onClick={() => setIsContractMenuOpen(!isContractMenuOpen)}
                     >
                         <span className="text-[11px] font-black text-white group-hover:text-accent transition-colors tracking-tight">{activeContract.name}</span>
-                        <ChevronDown size={12} className="text-white/40 group-hover:text-accent" />
+                        <LuChevronDown size={12} className="text-white/40 group-hover:text-accent" />
                     </div>
                 </div>
 
-                {/* Paper Mode Badge */}
-                {systemMode === 'PAPER' ? (
-                    <div className="ml-2 px-2 py-0.5 rounded border border-yellow-500/20 bg-yellow-500/10 flex items-center gap-1.5 animate-pulse">
-                        <div className="w-1 h-1 rounded-full bg-yellow-500" />
-                        <span className="text-[8px] font-black uppercase tracking-tighter text-yellow-500">🧪 SIMULATION TERMINAL</span>
-                    </div>
-                ) : (
-                    <div className="ml-2 px-2 py-0.5 rounded border border-red-500/20 bg-red-900/10 flex items-center gap-1.5">
-                        <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-[8px] font-black uppercase tracking-tighter text-red-500">💰 EXECUTION TERMINAL</span>
-                    </div>
-                )}
+                {/* Health Indicator */}
+                <div
+                    onClick={() => setUI({ isQAPanelOpen: true })}
+                    className={`ml-2 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1.5 border ${health === 'HEALTHY' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                        health === 'DEGRADED' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/10 border-red-500/20 text-red-500'
+                        }`}
+                >
+                    <div className={`w-1.5 h-1.5 rounded-full ${health === 'HEALTHY' ? 'bg-green-500 animate-pulse' :
+                        health === 'DEGRADED' ? 'bg-yellow-500' :
+                            'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'
+                        }`} />
+                    <span className="text-[8px] font-black uppercase tracking-tighter">{health}</span>
+                </div>
             </div>
 
             {/* RIGHT: Global Command Matrix */}
@@ -98,7 +110,7 @@ export function GlobalCommandBar() {
                         </div>
                     ) : (
                         <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/5 opacity-40">
-                            <Lock size={10} />
+                            <LuLock size={10} />
                             <span className="text-[8px] font-black uppercase tracking-tight">
                                 {isMarketOpen ? 'Auto Disabled' : 'Market Closed'}
                             </span>
@@ -120,7 +132,7 @@ export function GlobalCommandBar() {
                             }`}
                         title={agentState === 'IDLE' ? "Resume Agent" : "Pause Agent"}
                     >
-                        {agentState === 'IDLE' ? <Play size={10} className="fill-current" /> : <Pause size={10} className="fill-current" />}
+                        {agentState === 'IDLE' ? <LuPlay size={10} className="fill-current" /> : <LuPause size={10} className="fill-current" />}
                         {agentState === 'IDLE' ? 'RESUME' : 'PAUSE'}
                     </button>
 
@@ -134,7 +146,7 @@ export function GlobalCommandBar() {
                             : 'bg-red-500 hover:bg-red-600 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]'
                             }`}
                     >
-                        <AlertOctagon size={12} className={globalKillSwitch ? "" : "fill-white"} />
+                        <LuOctagonAlert size={12} className={globalKillSwitch ? "" : "fill-white"} />
                         {globalKillSwitch ? 'SYSTEM DEAD' : 'STOP'}
                     </button>
                 </div>
@@ -161,7 +173,7 @@ export function GlobalCommandBar() {
                             onClick={() => setUI({ isNotificationDrawerOpen: !isNotificationDrawerOpen })}
                             className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white transition-all relative"
                         >
-                            <Bell size={14} className={notifications.length > 0 ? 'text-accent' : ''} />
+                            <LuBell size={14} className={notifications.length > 0 ? 'text-accent' : ''} />
                             {notifications.length > 0 && (
                                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse border border-black" />
                             )}
@@ -171,7 +183,7 @@ export function GlobalCommandBar() {
                     {/* Profile */}
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setUI({ isAdminPanelOpen: true })}>
                         <div className="w-6 h-6 rounded bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-accent/40 transition-all">
-                            <User size={12} className="text-white/40 group-hover:text-accent" />
+                            <LuUser size={12} className="text-white/40 group-hover:text-accent" />
                         </div>
                     </div>
                 </div>

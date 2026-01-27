@@ -17,21 +17,9 @@ export class AuthController {
             return;
         }
 
-        // Determine intended mode based on username prefix
-        let intendedMode = 'PAPER';
-        let isValidUser = false;
-
-        if (username.startsWith('live_user_') || username === 'live_admin') {
-            intendedMode = 'LIVE';
-            isValidUser = true; // For now, we validate password against global admin hash
-        } else if (username.startsWith('paper_user_') || username === 'paper_admin') {
-            intendedMode = 'PAPER';
-            isValidUser = true;
-        } else if (username === ADMIN_USERNAME) {
-            intendedMode = 'PAPER'; // Default admin to PAPER for safety, or keep existing state? 
-            // Let's default standard 'admin' to PAPER for Android safety.
-            isValidUser = true;
-        }
+        // Determine intended mode based on username prefix: paper_* usernames → PAPER, others → LIVE
+        const intendedMode = username.startsWith('paper_') ? 'PAPER' : 'LIVE';
+        const isValidUser = true; // For now, we validate password against global admin hash
 
         if (!isValidUser) {
             res.status(401).json({ error: 'Invalid username' });
@@ -70,7 +58,13 @@ export class AuthController {
     }
 
     static check(req: Request, res: Response): void {
-        // middleware will have validated this
-        res.json({ authenticated: true });
+        const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+
+        // If middleware passed, or we are in PAPER mode bypass
+        res.json({
+            authenticated: true,
+            mode: MODE,
+            isPaperBypass: MODE === 'PAPER' && !req.cookies.auth_token
+        });
     }
 }

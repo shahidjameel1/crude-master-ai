@@ -1,7 +1,7 @@
 import { PaperTrader } from './paper/PaperTrader';
 import { RiskManager } from './risk/RiskManager';
 import { DemoDataGenerator } from './demo/DemoDataGenerator';
-import { RiskParameters, SystemState, TradingMode, Candle } from '../shared/types';
+import { RiskParameters, SystemState, TradingMode, Candle, OperationalMode } from './types';
 
 /**
  * Demo Trading Simulation
@@ -13,7 +13,7 @@ console.log('='.repeat(60));
 console.log('Objective: Demonstrate 50-point daily profit target');
 console.log('Strategy: ICT+SMC Hybrid');
 console.log('Risk: 1:2 Risk-Reward Ratio');
-console.log('='.\repeat(60) + '\n');
+console.log('='.repeat(60) + '\n');
 
 // Initialize risk parameters
 const riskParams: RiskParameters = {
@@ -27,13 +27,16 @@ const riskParams: RiskParameters = {
 
 // Initialize system state
 const systemState: SystemState = {
-    tradingMode: TradingMode.DEMO,
+    tradingMode: TradingMode.PAPER,
     isTradingEnabled: true,
     currentDate: new Date(),
     dailyPnlPoints: 0,
     tradesToday: 0,
     consecutiveLosses: 0,
-    isPaused: false
+    isPaused: false,
+    operationalMode: OperationalMode.NORMAL,
+    peakBalance: 100000,
+    isWeeklyLocked: false
 };
 
 const riskManager = new RiskManager(riskParams);
@@ -107,9 +110,9 @@ async function runSimulation() {
     }
 
     // Final statistics
-    console.log('\n' + '='.\repeat(60));
+    console.log('\n' + '='.repeat(60));
     console.log('📈 SIMULATION COMPLETE');
-    console.log('='.\repeat(60));
+    console.log('='.repeat(60));
 
     const finalStats = paperTrader.getStatistics();
 
@@ -130,13 +133,13 @@ async function runSimulation() {
         console.log(`\n✅ Completed ${targetTrades} trades demonstration`);
     }
 
-    console.log('\n' + '='.\repeat(60));
+    console.log('\n' + '='.repeat(60));
     console.log('Next Steps:');
     console.log('1. Review trade logs above');
     console.log('2. Connect Angel One API for live data');
     console.log('3. Run in paper mode with real market data');
     console.log('4. Deploy dashboard for monitoring');
-    console.log('='.\repeat(60));
+    console.log('='.repeat(60));
 }
 
 function sleep(ms: number): Promise<void> {

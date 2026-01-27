@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Info } from 'lucide-react';
+import { LuShieldCheck } from "react-icons/lu";
 
 export function ConfidenceMeter() {
     const { confidenceDetail, agentState } = useStore();
@@ -25,7 +25,8 @@ export function ConfidenceMeter() {
             {/* Header */}
             <div className="flex items-center justify-between z-10">
                 <div className="flex items-center gap-2">
-                    <ShieldCheck size={14} className={score >= 80 ? 'text-green-400' : 'text-white/40'} />
+                    <LuShieldCheck size={14} className={score >= 80 ? 'text-green-400' : 'text-white/40'} />
+                    <span className={score >= 80 ? 'text-green-400' : 'text-white/40'}>🛡️</span>
                     <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Signal Confidence</span>
                 </div>
                 <span className={`text-xs font-black font-mono ${colorClass.split(' ')[0]}`}>{score}%</span>

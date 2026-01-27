@@ -1,4 +1,4 @@
-import { Trophy, AlertCircle, History, X } from 'lucide-react';
+import { LuTrophy, LuInfo, LuHistory, LuX } from "react-icons/lu";
 import { Trade } from '../hooks/usePaperTrading';
 
 interface TradeReportModalProps {
@@ -24,11 +24,11 @@ export function TradeReportModal({ trade, onClose }: TradeReportModalProps) {
                 {/* Header */}
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
                     <div className="flex items-center gap-2">
-                        <Trophy className="text-accent" size={20} />
+                        <LuTrophy className="text-accent" size={20} />
                         <h3 className="font-bold text-white tracking-tight">Trade Performance Report</h3>
                     </div>
                     <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                        <X size={20} className="text-white/40" />
+                        <LuX size={20} className="text-white/40" />
                     </button>
                 </div>
 
@@ -56,7 +56,7 @@ export function TradeReportModal({ trade, onClose }: TradeReportModalProps) {
                     <div className="space-y-4">
                         <div className="bg-accent/5 border border-accent/20 p-4 rounded-xl">
                             <div className="flex items-center gap-2 mb-2">
-                                <AlertCircle size={16} className="text-accent" />
+                                <LuInfo size={16} className="text-accent" />
                                 <span className="text-xs font-bold text-accent uppercase tracking-wider">AI Feedback</span>
                             </div>
                             <p className="text-xs text-white/80 leading-relaxed italic">"{feedback}"</p>
@@ -65,7 +65,7 @@ export function TradeReportModal({ trade, onClose }: TradeReportModalProps) {
                         {/* Snapshot Context */}
                         <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                             <div className="flex items-center gap-2 mb-3">
-                                <History size={16} className="text-white/40" />
+                                <LuHistory size={16} className="text-white/40" />
                                 <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Market Context at Entry</span>
                             </div>
                             <div className="grid grid-cols-2 gap-y-2">

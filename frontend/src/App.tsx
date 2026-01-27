@@ -22,6 +22,8 @@ import { useRegimeDetection } from './hooks/useRegimeDetection';
 import { useSessionProfile } from './hooks/useSessionProfile';
 import { AuthOverlay } from './components/AuthOverlay';
 import { NotificationDrawer } from './components/NotificationDrawer';
+import { useSystemDiagnostics } from './hooks/useSystemDiagnostics';
+import { QAPanel } from './components/QAPanel';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -47,6 +49,7 @@ function App() {
     useStrategyEvolution(); // Activates strategy evolution
     useRegimeDetection(); // Activates regime detection
     useSessionProfile(); // Activates session-specific behavior
+    useSystemDiagnostics(); // Activates self-diagnostic engine
 
     // Synchronize device state with store
     useEffect(() => {
@@ -225,6 +228,7 @@ function App() {
             <NotificationToast />
             <NotificationDrawer />
             <AdminPanel />
+            <QAPanel />
 
             {/* Global Kill Switch Overlay */}
             {globalKillSwitch && (

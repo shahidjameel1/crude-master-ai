@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Wand2, X, Plus, Terminal, Play, Info, AlertTriangle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { LuWand, LuX, LuPlus, LuTerminal, LuPlay, LuInfo, LuTriangle } from "react-icons/lu";
 
 export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     const [step, setStep] = useState(1);
@@ -37,7 +37,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                 <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-white/2">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center border border-accent/20">
-                            <Wand2 size={24} className="text-accent" />
+                            <LuWand size={24} className="text-accent" />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-white uppercase tracking-tighter">Strategy Creator</h2>
@@ -45,7 +45,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-all">
-                        <X size={20} className="text-white/40 hover:text-white" />
+                        <LuX size={20} className="text-white/40 hover:text-white" />
                     </button>
                 </div>
 
@@ -67,7 +67,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                                 />
                             </div>
                             <div className="p-4 rounded-2xl bg-white/2 border border-white/5 flex items-start gap-4">
-                                <Info size={16} className="text-accent shrink-0 mt-1" />
+                                <LuInfo size={16} className="text-accent shrink-0 mt-1" />
                                 <p className="text-xs text-white/60 leading-relaxed font-heading">
                                     Define a clear, descriptive name. This protocol will be subject to all institutional safety laws upon activation.
                                 </p>
@@ -87,7 +87,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                                             }`}
                                     >
                                         {comp}
-                                        {rules.includes(comp) && <Plus size={14} className="rotate-45" />}
+                                        {rules.includes(comp) && <LuPlus size={14} className="rotate-45" />}
                                     </button>
                                 ))}
                             </div>
@@ -98,7 +98,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                         <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex flex-col gap-6">
                             <div className="h-48 bg-black border border-white/10 rounded-2xl p-4 font-mono text-[11px] overflow-hidden relative">
                                 <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-2">
-                                    <Terminal size={14} className="text-green-500" />
+                                    <LuTerminal size={14} className="text-green-500" />
                                     <span className="text-white/40 uppercase">Backtest Engine Sim_V1.p</span>
                                 </div>
                                 <div className="flex flex-col gap-1 text-green-500/80">
@@ -112,7 +112,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />
                             </div>
                             <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-4">
-                                <AlertTriangle size={16} className="text-red-500 shrink-0" />
+                                <LuTriangle size={16} className="text-red-500 shrink-0" />
                                 <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest leading-tight">
                                     AI Warning: High Max Drawdown detected. Consider adding a volatility filter before publishing.
                                 </p>
@@ -142,7 +142,7 @@ export function StrategyCreatorWizard({ isOpen, onClose }: { isOpen: boolean, on
                                 className="flex items-center gap-2 px-8 py-2 bg-accent text-white rounded-xl font-black uppercase text-xs shadow-blue-glow hover:bg-accent/80 transition-all active:scale-95"
                             >
                                 Continue
-                                <Play size={14} fill="white" />
+                                <LuPlay size={14} fill="white" />
                             </button>
                         ) : (
                             <button

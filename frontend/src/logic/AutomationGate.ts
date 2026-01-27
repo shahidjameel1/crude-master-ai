@@ -10,7 +10,7 @@ export class AutomationGate {
     static checkLaws(
         marketState: MarketState,
         currentPrice: number,
-        automationMode: 'STRATEGY_LIMITED' | 'MULTI' | 'FULL_SESSION',
+        _automationMode: 'STRATEGY_LIMITED' | 'MULTI' | 'FULL_SESSION',
         pointsToday: number,
         targetPoints: number,
         stopLossPoints: number

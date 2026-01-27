@@ -5,8 +5,7 @@ export const usePatienceEngine = () => {
     const {
         patienceState,
         updatePatienceState,
-        addReasoningLog,
-        tradeHistory
+        addReasoningLog
     } = useStore();
 
     useEffect(() => {

@@ -1,4 +1,4 @@
-import { Zap, Shield, Microscope, CheckCircle, Info } from 'lucide-react';
+import { LuZap, LuShield, LuMicroscope, LuCheck, LuInfo } from "react-icons/lu";
 import { StrategyEvolution } from '../hooks/useSafeLearning';
 
 interface StrategyEvolutionPanelProps {
@@ -10,7 +10,7 @@ export function StrategyEvolutionPanel({ suggestions, onApprove }: StrategyEvolu
     if (suggestions.length === 0) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-6 text-center bg-black/40">
-                <Microscope size={32} className="text-white/10 mb-2" />
+                <LuMicroscope size={32} className="text-white/10 mb-2" />
                 <p className="text-[10px] text-white/20 uppercase tracking-widest font-mono">
                     Agent Observation Active...<br />
                     Gathering behavioral evidence.
@@ -22,14 +22,14 @@ export function StrategyEvolutionPanel({ suggestions, onApprove }: StrategyEvolu
     return (
         <div className="flex flex-col gap-4 p-4 h-full bg-black/40 overflow-y-auto custom-scrollbar">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-                <Zap size={16} className="text-accent" />
+                <LuZap size={16} className="text-accent" />
                 <h2 className="text-xs font-bold text-white uppercase tracking-widest">Strategy Evolutions</h2>
             </div>
 
             {suggestions.map((s, idx) => (
                 <div key={idx} className="p-4 rounded-xl border border-accent/20 bg-accent/5 flex flex-col gap-3 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-2">
-                        <CheckCircle size={14} className="text-accent/40" />
+                        <LuCheck size={14} className="text-accent/40" />
                     </div>
 
                     <div>
@@ -72,7 +72,7 @@ export function StrategyEvolutionPanel({ suggestions, onApprove }: StrategyEvolu
                     </div>
 
                     <div className="mt-2 p-2 rounded bg-red-500/5 border border-red-500/10 flex items-start gap-2">
-                        <Shield size={12} className="text-red-500/40 mt-0.5" />
+                        <LuShield size={12} className="text-red-500/40 mt-0.5" />
                         <span className="text-[8px] text-white/40 uppercase leading-tight font-mono">
                             <span className="text-red-500/60 font-bold">Safe Law:</span> {s.whenNotToUseIt}
                         </span>
@@ -81,7 +81,7 @@ export function StrategyEvolutionPanel({ suggestions, onApprove }: StrategyEvolu
             ))}
 
             <div className="mt-4 flex items-start gap-2 p-3 bg-white/5 rounded-lg">
-                <Info size={14} className="text-white/20 mt-0.5" />
+                <LuInfo size={14} className="text-white/20 mt-0.5" />
                 <p className="text-[8px] text-white/40 uppercase tracking-tight leading-normal font-mono">
                     All strategy changes require human approval. The agent never self-updates without verification.
                 </p>

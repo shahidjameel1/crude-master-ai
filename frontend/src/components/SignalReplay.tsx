@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { LuMinus, LuCheck, LuX, LuTriangle } from "react-icons/lu";
 
 export function SignalReplay() {
     const { tradeReplays } = useStore();
@@ -28,12 +28,12 @@ export function SignalReplay() {
                         {/* Header */}
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                                {replay.result === 'WIN' && <CheckCircle2 size={20} className="text-green-500" />}
-                                {replay.result === 'LOSS' && <XCircle size={20} className="text-red-500" />}
-                                {replay.result === 'BREAKEVEN' && <Minus size={20} className="text-white/40" />}
+                                {replay.result === 'WIN' && <LuCheck size={20} className="text-green-500" />}
+                                {replay.result === 'LOSS' && <LuX size={20} className="text-red-500" />}
+                                {replay.result === 'BREAKEVEN' && <LuMinus size={20} className="text-white/40" />}
                                 <div>
                                     <span className={`text-xs font-black uppercase tracking-widest ${replay.result === 'WIN' ? 'text-green-400' :
-                                            replay.result === 'LOSS' ? 'text-red-400' : 'text-white/40'
+                                        replay.result === 'LOSS' ? 'text-red-400' : 'text-white/40'
                                         }`}>
                                         {replay.result}
                                     </span>
@@ -45,7 +45,7 @@ export function SignalReplay() {
                             <div className="text-right">
                                 <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">Confidence</div>
                                 <div className={`text-sm font-black ${replay.confidenceAtEntry >= 80 ? 'text-green-400' :
-                                        replay.confidenceAtEntry >= 50 ? 'text-yellow-400' : 'text-white/40'
+                                    replay.confidenceAtEntry >= 50 ? 'text-yellow-400' : 'text-white/40'
                                     }`}>
                                     {replay.confidenceAtEntry}%
                                 </div>
@@ -61,7 +61,7 @@ export function SignalReplay() {
 
                         {/* Market Condition */}
                         <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle size={12} className="text-accent" />
+                            <LuTriangle size={12} className="text-accent" />
                             <span className="text-[9px] font-bold text-white/60 uppercase tracking-wide">Market:</span>
                             <span className="text-[9px] font-mono text-white/80">{replay.marketCondition}</span>
                         </div>

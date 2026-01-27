@@ -6,7 +6,8 @@ import {
     SystemState,
     TradingMode,
     MarketData,
-    OperationalMode
+    OperationalMode,
+    OrderDirection
 } from '../types';
 import { RiskManager } from '../risk/RiskManager';
 import { ICTSMCHybridStrategy } from '../strategies/implementations/ICTSMCHybridStrategy';
@@ -144,8 +145,8 @@ export class PaperTrader {
 
             // Check if stop loss hit
             if (
-                (trade.direction === 'LONG' && currentPrice <= trade.stopLoss) ||
-                (trade.direction === 'SHORT' && currentPrice >= trade.stopLoss)
+                (trade.direction === OrderDirection.LONG && currentPrice <= trade.stopLoss) ||
+                (trade.direction === OrderDirection.SHORT && currentPrice >= trade.stopLoss)
             ) {
                 shouldClose = true;
                 exitReason = 'Stop Loss';
@@ -154,8 +155,8 @@ export class PaperTrader {
 
             // Check if take profit hit
             if (
-                (trade.direction === 'LONG' && currentPrice >= trade.takeProfit) ||
-                (trade.direction === 'SHORT' && currentPrice <= trade.takeProfit)
+                (trade.direction === OrderDirection.LONG && currentPrice >= trade.takeProfit) ||
+                (trade.direction === OrderDirection.SHORT && currentPrice <= trade.takeProfit)
             ) {
                 shouldClose = true;
                 exitReason = 'Take Profit';
@@ -167,7 +168,7 @@ export class PaperTrader {
                 trade.exitTime = new Date();
 
                 // Calculate P&L
-                if (trade.direction === 'LONG') {
+                if (trade.direction === OrderDirection.LONG) {
                     trade.profitLossPoints = trade.exitPrice - trade.entryPrice;
                 } else {
                     trade.profitLossPoints = trade.entryPrice - trade.exitPrice;
