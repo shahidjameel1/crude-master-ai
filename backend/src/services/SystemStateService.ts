@@ -8,7 +8,6 @@ interface SystemState {
     maxTradesPerDay: number;
     accountSize: number;
     defaultTrade: string;
-    globalKillSwitch: boolean;
 }
 
 const STATE_FILE = path.resolve(__dirname, '../../data/system_state.json');
@@ -37,8 +36,7 @@ export class SystemStateService {
             riskPerTrade: 1,
             maxTradesPerDay: 3,
             accountSize: 500000,
-            defaultTrade: 'CRUDEOILM',
-            globalKillSwitch: false
+            defaultTrade: 'CRUDEOILM'
         };
     }
 

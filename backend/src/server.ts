@@ -516,7 +516,7 @@ app.post("/api/trade", authMiddleware, (req, res) => {
         });
     }
 
-    const securityCheck = SecurityController.isTradingAllowed();
+    const securityCheck = SecurityController.isTradingAllowed(req);
     if (!securityCheck.allowed) {
         console.error(`🛑 BLOCKED: Security Restriction - ${securityCheck.reason}`);
         return res.status(403).json({
@@ -561,21 +561,12 @@ app.post("/api/trade", authMiddleware, (req, res) => {
     }
 
     // 4. EXECUTION GATE (Mode Switch)
-    console.log(`✅ FIREWALL PASSED. MODE: ${MODE}`);
+    const sessionMode = (req as any).mode || 'PAPER';
+    console.log(`✅ FIREWALL PASSED. SESSION MODE: ${sessionMode}`);
 
-    if (MODE === 'SHADOW') {
-        console.log('👻 SHADOW MODE: Trade logged but NOT executed.');
-        return res.json({
-            status: 'SHADOW_LOGGED',
-            message: 'Trade recorded in shadow ledger.',
-            timestamp: Date.now()
-        });
-    }
-
-    if (MODE === 'PAPER') {
+    if (sessionMode === 'PAPER') {
         console.log('📝 PAPER MODE: Simulating execution internally.');
-        // In paper mode, we still use the OrderService if we want a local ledger, 
-        // but since we don't have a paper ledger DB yet, we just mock the success.
+        // In paper mode, we mock the success.
         setTimeout(() => {
             res.json({
                 status: 'EXECUTED_PAPER',

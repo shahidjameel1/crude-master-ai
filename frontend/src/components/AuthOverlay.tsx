@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 export const AuthOverlay: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [mode, setMode] = useState<'PAPER' | 'LIVE'>('PAPER');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -19,11 +20,11 @@ export const AuthOverlay: React.FC = () => {
             const cleanUser = username.trim();
             const cleanPass = password.trim();
 
-            console.log(`🔑 Attempting login for: ${cleanUser}`);
+            console.log(`🔑 Attempting login for: ${cleanUser} in ${mode} mode`);
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: cleanUser, password: cleanPass }),
+                body: JSON.stringify({ username: cleanUser, password: cleanPass, mode }),
                 credentials: 'include'
             });
 
@@ -32,7 +33,7 @@ export const AuthOverlay: React.FC = () => {
             if (response.ok) {
                 await useStore.getState().fetchSystemStatus(); // Sync mode immediately
                 setAuthenticated(true);
-                pushNotification('SUCCESS', 'Access Granted');
+                pushNotification('SUCCESS', `${mode} Session Established`);
             } else {
                 let errorMessage = 'Invalid credentials';
                 try {
@@ -63,48 +64,69 @@ export const AuthOverlay: React.FC = () => {
                 {/* 3D Reflection Effect */}
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
 
-                <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 mb-4 animate-float">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center mb-6">
+                    <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 mb-3 animate-float">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
                         IDENTITY VERIFICATION
                     </h1>
-                    <p className="text-gray-400 text-sm mt-1 tracking-widest opacity-60">PROPRIETARY TERMINAL ACCESS</p>
-
-                    {/* Auto-Detection Status */}
-                    <div className="mt-2 text-[8px] font-black uppercase tracking-[0.2em] text-cyan-500/40">
-                        Secure Proxy: ACTIVE (P:3002)
-                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1 tracking-widest opacity-60">PROPRIETARY TERMINAL ACCESS</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-4">
+                    {/* Mode Selection */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setMode('PAPER')}
+                            className={`flex flex-col items-center p-3 rounded-xl border transition-all ${mode === 'PAPER'
+                                    ? 'bg-cyan-500/20 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.2)]'
+                                    : 'bg-white/5 border-white/5 opacity-50 grayscale'
+                                }`}
+                        >
+                            <span className="text-[10px] font-black tracking-widest text-cyan-400">PAPER</span>
+                            <span className="text-[8px] text-cyan-400/60">SIMULATION</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMode('LIVE')}
+                            className={`flex flex-col items-center p-3 rounded-xl border transition-all ${mode === 'LIVE'
+                                    ? 'bg-red-500/20 border-red-400/50 shadow-[0_0_15px_rgba(248,113,113,0.2)]'
+                                    : 'bg-white/5 border-white/5 opacity-50 grayscale'
+                                }`}
+                        >
+                            <span className="text-[10px] font-black tracking-widest text-red-500">LIVE</span>
+                            <span className="text-[8px] text-red-500/60">REAL CAPITAL</span>
+                        </button>
+                    </div>
+
                     <div>
-                        <label className="block text-xs font-semibold text-cyan-400/80 mb-2 uppercase tracking-tighter">Operator Handle</label>
+                        <label className="block text-[10px] font-semibold text-cyan-400/80 mb-1 uppercase tracking-tighter">Operator Handle</label>
                         <input
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-gray-600"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-gray-600 text-sm"
                             placeholder="Enter username"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-cyan-400/80 mb-2 uppercase tracking-tighter">Cryptographic Sequence</label>
+                        <label className="block text-[10px] font-semibold text-cyan-400/80 mb-1 uppercase tracking-tighter">Cryptographic Sequence</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-gray-600"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-gray-600 text-sm"
                             placeholder="••••••••"
                         />
                     </div>
 
                     {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs text-center animate-shake">
+                        <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-[10px] text-center animate-shake">
                             {error}
                         </div>
                     )}
@@ -112,21 +134,20 @@ export const AuthOverlay: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full relative group overflow-hidden bg-gradient-to-br from-cyan-600 to-blue-700 p-[1px] rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        className="w-full relative group overflow-hidden bg-gradient-to-br from-cyan-600 to-blue-700 p-[1px] rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 mt-2"
                     >
                         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="bg-[#0a0c10] rounded-[7px] py-3 flex items-center justify-center space-x-2 transition-all group-hover:bg-transparent">
-                            <span className="text-white font-bold tracking-widest text-sm">
+                            <span className="text-white font-bold tracking-widest text-xs">
                                 {loading ? 'DECRYPTING...' : 'ESTABLISH SESSION'}
                             </span>
                         </div>
                     </button>
                 </form>
 
-                <div className="mt-8 flex justify-between items-center opacity-30">
+                <div className="mt-6 flex justify-between items-center opacity-30">
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
-                    <span className="text-[10px] text-white px-3 font-mono">FRIDAY-X OS</span>
-                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/20" />
+                    <span className="text-[8px] text-white px-3 font-mono">FRIDAY-X OS</span>
                 </div>
             </div>
 
@@ -147,6 +168,6 @@ export const AuthOverlay: React.FC = () => {
                     animation: shake 0.2s ease-in-out 0s 2;
                 }
             `}</style>
-        </div>
+        </div >
     );
 };

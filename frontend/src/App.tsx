@@ -77,10 +77,10 @@ function App() {
                 const response = await fetch('/api/auth/check', {
                     credentials: 'include'
                 });
-                console.log(`🛡️ Session Verification: ${response.status}`);
-                if (response.ok) {
-                    setAuthenticated(true);
-                } else {
+                console.log(`🛡️ Session Status Check: ${response.status}`);
+                // We no longer auto-set authenticated(true) here to force manual login every time.
+                // We only set false if it's explicitly rejected to clear any stale state.
+                if (!response.ok) {
                     setAuthenticated(false);
                 }
             } catch (err) {

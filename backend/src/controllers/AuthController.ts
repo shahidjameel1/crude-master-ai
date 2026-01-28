@@ -5,8 +5,8 @@ import { setSystemMode } from '../server';
 
 export class AuthController {
     static async login(req: Request, res: Response): Promise<void> {
-        const { username, password } = req.body;
-        console.log(`🔐 Login Attempt: [${username}] (PWD Length: ${password?.length || 0})`);
+        const { username, password, mode } = req.body;
+        console.log(`🔐 Login Attempt: [${username}] Mode: [${mode}] (PWD Length: ${password?.length || 0})`);
 
         const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
         const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
@@ -17,9 +17,9 @@ export class AuthController {
             return;
         }
 
-        // Determine intended mode based on username prefix: paper_* usernames → PAPER, others → LIVE
-        const intendedMode = username.startsWith('paper_') ? 'PAPER' : 'LIVE';
-        const isValidUser = true; // For now, we validate password against global admin hash
+        // Mode is chosen ONLY at login and is IMMUTABLE for the session
+        const intendedMode = (mode === 'LIVE' || mode === 'PAPER') ? mode : 'PAPER';
+        const isValidUser = username === ADMIN_USERNAME;
 
         if (!isValidUser) {
             res.status(401).json({ error: 'Invalid username' });
@@ -38,8 +38,9 @@ export class AuthController {
 
         console.log(`✅ Login successful for user: [${username}] -> Switching to ${intendedMode} MODE`);
 
-        // Generate JWT
-        const token = jwt.sign({ username, mode: intendedMode }, JWT_SECRET, { expiresIn: '24h' });
+        // Generate JWT with immutable mode and session ID
+        const sessionId = `sid_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const token = jwt.sign({ username, mode: intendedMode, sessionId }, JWT_SECRET, { expiresIn: '24h' });
 
         // Set HttpOnly cookie
         res.cookie('auth_token', token, {

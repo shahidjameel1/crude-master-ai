@@ -11,12 +11,9 @@ export function setOrderService(service: OrderService) {
     orderService = service;
 }
 
-// Simple in-memory storage for this session
-// In production, this might sync with a database (SystemState table)
-// Load initial state from persistent service
-let currentMode: OperationalMode = systemState.getState().globalKillSwitch
-    ? OperationalMode.EMERGENCY_LOCK
-    : OperationalMode.NORMAL;
+// In-memory session state (Non-persistent, cleared on restart)
+const sessionKillSwitches = new Map<string, boolean>();
+let currentMode: OperationalMode = OperationalMode.NORMAL;
 
 export class SecurityController {
     /**
@@ -29,12 +26,15 @@ export class SecurityController {
     /**
      * Check if trading is allowed based on current mode
      */
-    static isTradingAllowed(): { allowed: boolean; reason?: string } {
+    static isTradingAllowed(req: Request): { allowed: boolean; reason?: string } {
+        const sessionId = (req as any).user?.sessionId;
+        const isKilled = sessionId ? sessionKillSwitches.get(sessionId) : false;
+
+        if (isKilled || currentMode === OperationalMode.EMERGENCY_LOCK) {
+            return { allowed: false, reason: 'System is LOCKED by Kill Switch' };
+        }
         if (currentMode === OperationalMode.GLASS) {
             return { allowed: false, reason: 'System is in GLASS MODE (Read-Only)' };
-        }
-        if (currentMode === OperationalMode.EMERGENCY_LOCK) {
-            return { allowed: false, reason: 'System is in EMERGENCY LOCK' };
         }
         return { allowed: true };
     }
@@ -61,8 +61,11 @@ export class SecurityController {
      * Stops all trading immediately and locks the system.
      */
     static async emergencyKill(req: Request, res: Response) {
+        const sessionId = (req as any).user?.sessionId;
+        if (sessionId) sessionKillSwitches.set(sessionId, true);
+
         currentMode = OperationalMode.EMERGENCY_LOCK;
-        systemState.updateState({ globalKillSwitch: true, automationMode: 'OFF' });
+        systemState.updateState({ automationMode: 'OFF' });
 
         console.log('🚨 EMERGENCY KILL SWITCH ACTIVATED');
 
@@ -101,8 +104,9 @@ export class SecurityController {
      * Endpoint: Reset System (Owner Only)
      */
     static resetSystem(req: Request, res: Response) {
+        const sessionId = (req as any).user?.sessionId;
+        if (sessionId) sessionKillSwitches.set(sessionId, false);
         currentMode = OperationalMode.NORMAL;
-        systemState.updateState({ globalKillSwitch: false });
         console.log('✅ System Reset to NORMAL mode');
         res.json({ mode: currentMode });
     }

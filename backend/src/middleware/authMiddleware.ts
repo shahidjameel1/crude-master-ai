@@ -7,31 +7,25 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
 
     // 1. PAPER Mode Bypass (Android/Termux Stability)
     // If in PAPER mode, we allow access to facilitate local inspection without auth loops
-    if (MODE === 'PAPER' && req.path === '/api/auth/check') {
-        next();
-        return;
-    }
-
     // Check for token in cookies
     const token = req.cookies.auth_token;
 
     if (!token) {
-        // In PAPER mode, we are more lenient for endpoints that don't mutation trade state
-        if (MODE === 'PAPER') {
-            next();
-            return;
+        if (req.path !== '/api/auth/check') {
+            console.warn(`🔞 Auth failed: No token found in cookies for ${req.path}`);
         }
-        console.warn(`🔞 Auth failed: No token found in cookies for ${req.path}`);
         res.status(401).json({ error: 'Not authenticated' });
         return;
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
         (req as any).user = decoded;
+        (req as any).mode = decoded.mode || 'PAPER';
         next();
     } catch (error) {
         if (MODE === 'PAPER') {
+            (req as any).mode = 'PAPER';
             next();
             return;
         }
