@@ -5,10 +5,9 @@ import { setSystemMode } from '../server';
 
 export class AuthController {
     static async login(req: Request, res: Response): Promise<void> {
-        const { username, password, mode } = req.body;
-        console.log(`🔐 Login Attempt: [${username}] Mode: [${mode}] (PWD Length: ${password?.length || 0})`);
+        const { username, password } = req.body;
 
-        const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+        const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'shahidjameel01';
         const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
         const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -17,26 +16,30 @@ export class AuthController {
             return;
         }
 
-        // Mode is chosen ONLY at login and is IMMUTABLE for the session
-        const intendedMode = (mode === 'LIVE' || mode === 'PAPER') ? mode : 'PAPER';
-        const isValidUser = username === ADMIN_USERNAME;
+        // Mode detected ONLY from username prefix
+        const isPaperRequest = username.startsWith('paper_');
+        const baseUsername = isPaperRequest ? username.replace('paper_', '') : username;
+        const intendedMode = isPaperRequest ? 'PAPER' : 'LIVE';
 
-        if (!isValidUser) {
-            res.status(401).json({ error: 'Invalid username' });
+        console.log(`🔐 Login Attempt: [${username}] -> Detected Mode: [${intendedMode}]`);
+
+        // Strict Credential Check
+        if (baseUsername !== ADMIN_USERNAME) {
+            res.status(401).json({ error: 'Invalid operator identity' });
             return;
         }
 
         const isMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
         if (!isMatch) {
-            console.log(`❌ Login failed: Password mismatch for user [${username}]`);
-            res.status(401).json({ error: 'Invalid credentials' });
+            console.log(`❌ Login failed: Hash mismatch for [${username}]`);
+            res.status(401).json({ error: 'Invalid cryptographic sequence' });
             return;
         }
 
-        // Switch System Mode
+        // Switch System Mode (Immutable for session)
         setSystemMode(intendedMode);
 
-        console.log(`✅ Login successful for user: [${username}] -> Switching to ${intendedMode} MODE`);
+        console.log(`✅ Session Established: [${username}] Mode: [${intendedMode}]`);
 
         // Generate JWT with immutable mode and session ID
         const sessionId = `sid_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -50,7 +53,7 @@ export class AuthController {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
-        res.json({ message: `Login successful. Mode: ${intendedMode}`, mode: intendedMode });
+        res.json({ message: `Session Established: ${intendedMode}`, mode: intendedMode });
     }
 
     static logout(req: Request, res: Response): void {

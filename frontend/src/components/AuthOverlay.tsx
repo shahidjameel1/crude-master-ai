@@ -4,7 +4,6 @@ import { useStore } from '../store/useStore';
 export const AuthOverlay: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [mode, setMode] = useState<'PAPER' | 'LIVE'>('PAPER');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -20,35 +19,28 @@ export const AuthOverlay: React.FC = () => {
             const cleanUser = username.trim();
             const cleanPass = password.trim();
 
-            console.log(`🔑 Attempting login for: ${cleanUser} in ${mode} mode`);
+            console.log(`🔑 Attempting session establishment for: ${cleanUser}`);
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: cleanUser, password: cleanPass, mode }),
+                body: JSON.stringify({ username: cleanUser, password: cleanPass }),
                 credentials: 'include'
             });
 
-            console.log(`📡 Server Responded: ${response.status}`);
+            const data = await response.json();
 
             if (response.ok) {
-                await useStore.getState().fetchSystemStatus(); // Sync mode immediately
+                await useStore.getState().fetchSystemStatus();
                 setAuthenticated(true);
-                pushNotification('SUCCESS', `${mode} Session Established`);
+                pushNotification('SUCCESS', `${data.mode} Session Active`);
             } else {
-                let errorMessage = 'Invalid credentials';
-                try {
-                    const data = await response.json();
-                    errorMessage = data.error || errorMessage;
-                } catch (e) {
-                    errorMessage = `Error ${response.status}: Server failure`;
-                }
-                setError(errorMessage);
+                setError(data.error || 'Identity rejection');
                 pushNotification('ERROR', 'Access Denied');
             }
         } catch (err) {
-            console.error('Login system error:', err);
-            setError('System unreachable (Check Backend)');
-            pushNotification('ERROR', 'System Failure');
+            console.error('Terminal error:', err);
+            setError('System unreachable (Check Link)');
+            pushNotification('ERROR', 'Link Failure');
         } finally {
             setLoading(false);
         }
@@ -77,32 +69,6 @@ export const AuthOverlay: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
-                    {/* Mode Selection */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <button
-                            type="button"
-                            onClick={() => setMode('PAPER')}
-                            className={`flex flex-col items-center p-3 rounded-xl border transition-all ${mode === 'PAPER'
-                                    ? 'bg-cyan-500/20 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.2)]'
-                                    : 'bg-white/5 border-white/5 opacity-50 grayscale'
-                                }`}
-                        >
-                            <span className="text-[10px] font-black tracking-widest text-cyan-400">PAPER</span>
-                            <span className="text-[8px] text-cyan-400/60">SIMULATION</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setMode('LIVE')}
-                            className={`flex flex-col items-center p-3 rounded-xl border transition-all ${mode === 'LIVE'
-                                    ? 'bg-red-500/20 border-red-400/50 shadow-[0_0_15px_rgba(248,113,113,0.2)]'
-                                    : 'bg-white/5 border-white/5 opacity-50 grayscale'
-                                }`}
-                        >
-                            <span className="text-[10px] font-black tracking-widest text-red-500">LIVE</span>
-                            <span className="text-[8px] text-red-500/60">REAL CAPITAL</span>
-                        </button>
-                    </div>
-
                     <div>
                         <label className="block text-[10px] font-semibold text-cyan-400/80 mb-1 uppercase tracking-tighter">Operator Handle</label>
                         <input

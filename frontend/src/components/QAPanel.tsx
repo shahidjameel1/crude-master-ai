@@ -96,21 +96,43 @@ export function QAPanel() {
 
     const getStatusStyles = (status: string) => {
         switch (status) {
-            case 'PASS': return 'text-green-400 bg-green-500/10 border-green-500/20';
-            case 'WARN': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-            case 'FAIL': return 'text-red-400 bg-red-500/10 border-red-500/20';
+            case 'HEALTHY': return 'text-green-400 bg-green-500/10 border-green-500/20';
+            case 'DEGRADED': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+            case 'UNSAFE': return 'text-red-400 bg-red-500/10 border-red-500/20';
             default: return 'text-white/40 bg-white/5 border-white/5';
         }
     };
 
+    const getHealthState = () => {
+        const { marketData, agent, backend } = systemDiagnostics;
+        if (backend === 'UNSAFE' || globalKillSwitch) return 'UNSAFE';
+        if (backend === 'DEGRADED' || marketData === 'STALE' || agent === 'STALLED') return 'DEGRADED';
+        return 'HEALTHY';
+    };
+
+    const overallHealth = getHealthState();
+
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'PASS': return <LuCircleCheck size={14} className="text-green-500" />;
-            case 'WARN': return <LuTriangleAlert size={14} className="text-yellow-500" />;
-            case 'FAIL': return <LuCircleX size={14} className="text-red-500" />;
-            default: return null;
+            case 'HEALTHY':
+            case 'OK':
+            case 'ACTIVE':
+            case 'READY': return <LuCircleCheck className="text-green-400" />;
+            case 'DEGRADED':
+            case 'WARN':
+            case 'STALE':
+            case 'IDLE': return <LuTriangleAlert className="text-yellow-400" />;
+            case 'UNSAFE':
+            case 'FAIL':
+            case 'DOWN':
+            case 'BLOCKED':
+            case 'UNREACHABLE': return <LuCircleX className="text-red-500" />;
+            default: return <LuInfo className="text-gray-400" />;
         }
     };
+
+    // --- Usage of overallHealth in the UI ---
+    // (Assuming there's a header or summary section that needs it)
 
     return (
         <AnimatePresence>
@@ -122,19 +144,20 @@ export function QAPanel() {
                     className="relative w-full max-w-2xl bg-[#0A0A0A] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent">
-                                <LuActivity size={24} />
-                            </div>
+                    <div className="p-6 border-b border-white/5 bg-white/5">
+                        <div className="flex items-center justify-between mb-8">
                             <div>
-                                <h2 className="text-xl font-black text-white uppercase tracking-tighter">System QA Diagnostics</h2>
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Real-Time Core Interlocks</p>
+                                <h2 className="text-xl font-bold bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">DIAGNOSTIC TERMINAL</h2>
+                                <p className="text-[10px] text-white/40 tracking-[0.2em] mt-1 uppercase">Centralized System Integrity Audit</p>
+                            </div>
+                            <div className={`px-4 py-1.5 rounded-full border flex items-center gap-2 ${getStatusStyles(overallHealth)} shadow-lg shadow-current/10`}>
+                                <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                                <span className="text-[10px] font-black tracking-widest uppercase">{overallHealth}</span>
                             </div>
                         </div>
                         <button
                             onClick={() => setUI({ isQAPanelOpen: false })}
-                            className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
+                            className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-all"
                         >
                             <LuX size={24} />
                         </button>

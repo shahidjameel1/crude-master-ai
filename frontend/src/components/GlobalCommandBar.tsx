@@ -40,9 +40,9 @@ export function GlobalCommandBar() {
 
     // Health Logic
     const getHealthState = () => {
-        const { auth, marketData, agent, backend } = systemDiagnostics;
-        if (auth === 'FAIL' || marketData === 'DOWN' || backend === 'UNREACHABLE') return 'UNSAFE';
-        if (marketData === 'STALE' || agent === 'STALLED') return 'DEGRADED';
+        const { marketData, agent, backend } = systemDiagnostics;
+        if (backend === 'UNSAFE' || marketData === 'DOWN') return 'UNSAFE';
+        if (backend === 'DEGRADED' || marketData === 'STALE' || agent === 'STALLED') return 'DEGRADED';
         return 'HEALTHY';
     };
 
@@ -94,8 +94,8 @@ export function GlobalCommandBar() {
                     <AgentStatusPill />
 
                     <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/5">
-                        <div className={`w-1 h-1 rounded-full bg-current ${heartbeat.status === 'OK' ? 'text-green-500 animate-pulse' : 'text-red-500'}`} />
-                        <span className={`text-[9px] font-mono font-bold ${heartbeat.status === 'OK' ? 'text-green-500' : 'text-red-500'}`}>{heartbeat.latency}ms</span>
+                        <div className={`w-1 h-1 rounded-full bg-current ${heartbeat.status === 'HEALTHY' ? 'text-green-500 animate-pulse' : (heartbeat.status === 'DEGRADED' ? 'text-yellow-500' : 'text-red-500')}`} />
+                        <span className={`text-[9px] font-mono font-bold ${heartbeat.status === 'HEALTHY' ? 'text-green-500' : (heartbeat.status === 'DEGRADED' ? 'text-yellow-500' : 'text-red-500')}`}>{heartbeat.latency}ms</span>
                     </div>
 
                     {/* Auto-Engage Indicator (Desktop + Mobile Compact) */}

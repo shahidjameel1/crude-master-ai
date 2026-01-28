@@ -70,28 +70,10 @@ function App() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [globalKillSwitch, triggerKillSwitch]);
 
-    // Session Verification
+    // Zero silent auto-login. App must always start at verification terminal.
     useEffect(() => {
-        const verifySession = async () => {
-            try {
-                const response = await fetch('/api/auth/check', {
-                    credentials: 'include'
-                });
-                console.log(`🛡️ Session Status Check: ${response.status}`);
-                // We no longer auto-set authenticated(true) here to force manual login every time.
-                // We only set false if it's explicitly rejected to clear any stale state.
-                if (!response.ok) {
-                    setAuthenticated(false);
-                }
-            } catch (err) {
-                setAuthenticated(false);
-            } finally {
-                setAuthLoading(false);
-            }
-        };
-
-        verifySession();
-    }, [setAuthenticated, setAuthLoading]);
+        setAuthLoading(false);
+    }, [setAuthLoading]);
 
     // Fetch System Status (Mode/Health)
     useEffect(() => {

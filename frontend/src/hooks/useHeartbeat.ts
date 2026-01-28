@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
 export interface HeartbeatStatus {
-    status: 'OK' | 'DEGRADED' | 'DOWN';
+    status: 'HEALTHY' | 'DEGRADED' | 'UNSAFE';
     latency: number;
     lastCheck: number;
 }
 
 export const useHeartbeat = () => {
     const [status, setStatus] = useState<HeartbeatStatus>({
-        status: 'OK',
+        status: 'HEALTHY',
         latency: 0,
         lastCheck: Date.now()
     });
@@ -20,18 +20,20 @@ export const useHeartbeat = () => {
                 const res = await fetch('/api/security/heartbeat', {
                     credentials: 'include'
                 });
+                const data = await res.json();
                 const end = Date.now();
+
                 if (res.ok) {
                     setStatus({
-                        status: 'OK',
+                        status: data.status, // Use backend status (HEALTHY / DEGRADED / UNSAFE)
                         latency: end - start,
                         lastCheck: end
                     });
                 } else {
-                    setStatus({ status: 'DEGRADED', latency: end - start, lastCheck: end });
+                    setStatus({ status: 'UNSAFE', latency: end - start, lastCheck: end });
                 }
             } catch (e) {
-                setStatus({ status: 'DOWN', latency: 0, lastCheck: Date.now() });
+                setStatus({ status: 'UNSAFE', latency: 0, lastCheck: Date.now() });
             }
         };
 

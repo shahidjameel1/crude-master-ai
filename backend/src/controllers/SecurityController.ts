@@ -84,17 +84,29 @@ export class SecurityController {
 
     /**
      * Endpoint: System Heartbeat
-     * Returns health status of the system
+     * Returns health status of the system (HEALTHY, DEGRADED, UNSAFE)
      */
     static async heartbeat(req: Request, res: Response) {
         const metrics = HealthService.getMetrics();
         const connections = await HealthService.checkConnectivity();
 
-        const heartbeat: Heartbeat = {
+        // Compute 3-state health logic
+        let healthState: 'HEALTHY' | 'DEGRADED' | 'UNSAFE' = 'HEALTHY';
+
+        if (currentMode === OperationalMode.EMERGENCY_LOCK) {
+            healthState = 'UNSAFE';
+        } else if (!connections.broker || !connections.feed) {
+            healthState = 'DEGRADED';
+        }
+
+        const heartbeat = {
             timestamp: metrics.timestamp,
-            status: (currentMode === OperationalMode.EMERGENCY_LOCK || !connections.broker) ? 'DOWN' : 'OK',
+            status: healthState,
             latencyMs: metrics.latencyMs,
-            services: connections
+            services: {
+                ...connections,
+                operationalMode: currentMode
+            }
         };
 
         res.json(heartbeat);

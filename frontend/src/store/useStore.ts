@@ -17,7 +17,7 @@ export interface SystemDiagnostics {
     agent: 'ACTIVE' | 'IDLE' | 'STALLED';
     execution: 'READY' | 'BLOCKED';
     ui: 'OK' | 'DEGRADED';
-    backend: 'OK' | 'UNREACHABLE';
+    backend: 'HEALTHY' | 'DEGRADED' | 'UNSAFE';
     lastCheck: number;
 }
 
@@ -397,7 +397,7 @@ export const useStore = create<CockpitState>((set, get) => ({
         agent: 'IDLE',
         execution: 'BLOCKED',
         ui: 'OK',
-        backend: 'UNREACHABLE',
+        backend: 'HEALTHY',
         lastCheck: Date.now()
     },
 

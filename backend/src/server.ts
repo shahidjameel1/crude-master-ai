@@ -470,22 +470,53 @@ app.get("/api/candles", authMiddleware, async (req, res) => {
 
         res.status(500).json({
             error: error.message,
-            type: error.constructor.name,
-            details: error
+            type: error.constructor.name
         });
     }
 });
 
-/* ───────── MARKET STATUS (PROTECTED) ───────── */
-app.get("/api/market/status", authMiddleware, (req, res) => {
+// --- PUBLIC DATA ENDPOINTS (NO AUTH REQUIRED) ---
+
+// Candle Data API - Always responds, decoupled from auth
+app.get('/api/candles', async (req, res) => {
+    const { interval = '5m' } = req.query;
+
+    try {
+        const marketData = await strategyEngine.getMarketData(interval as string);
+        if (marketData && marketData.candles.length > 0) {
+            return res.json(marketData.candles);
+        }
+        const mockCandles = demoGenerator.generateHistory(100, interval as string);
+        res.json(mockCandles);
+    } catch (error) {
+        console.error('❌ PUBLIC FEED FAILED:', error);
+        res.json([]);
+    }
+});
+
+// System Status - For health dashboard (Limited info)
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ONLINE',
+        mode: getSystemMode(),
+        broker: brokerClient ? 'CONNECTED' : 'OFFLINE',
+        dataFeed: getSystemMode() === 'PAPER' ? 'SIMULATION' : (brokerClient ? 'ANGEL_ONE' : 'FALLBACK'),
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get("/api/market/status", (req, res) => {
     res.json({
         isOpen: isMarketOpen(),
         timestamp: Date.now()
     });
 });
 
-/* ───────── ACTIVE CONTRACT (PROTECTED) ───────── */
-app.get("/api/contract/active", authMiddleware, (req, res) => {
+// --- PROTECTED ROUTES ---
+// Apply auth middleware to everything below this line
+app.use('/api', authMiddleware);
+
+app.get("/api/contract/active", (req, res) => {
     res.json({
         symbol: 'CRUDEOIL19FEB26',
         displayName: 'CRUDEOIL 19 FEB 2026',

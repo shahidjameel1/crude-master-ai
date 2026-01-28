@@ -76,8 +76,8 @@ export const useSystemDiagnostics = () => {
             const errorCount = notifications.filter(n => n.type === 'ERROR').length;
             const uiStatus = errorCount > 5 ? 'DEGRADED' : 'OK';
 
-            // 6. Backend Health
-            const backendHealthStatus = heartbeat.status === 'DOWN' ? 'UNREACHABLE' : 'OK';
+            // 6. Backend Health (Direct 3-state mapping)
+            const backendHealthStatus = heartbeat.status;
 
             // Update Store
             updateDiagnostics({
