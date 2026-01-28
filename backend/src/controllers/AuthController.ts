@@ -45,30 +45,26 @@ export class AuthController {
         const sessionId = `sid_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         const token = jwt.sign({ username, mode: intendedMode, sessionId }, JWT_SECRET, { expiresIn: '24h' });
 
-        // Set HttpOnly cookie
-        res.cookie('auth_token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        res.json({
+            success: true,
+            token,
+            mode: intendedMode,
+            message: `Session Established: ${intendedMode}`
         });
-
-        res.json({ message: `Session Established: ${intendedMode}`, mode: intendedMode });
     }
 
     static logout(req: Request, res: Response): void {
-        res.clearCookie('auth_token');
         res.json({ message: 'Logged out' });
     }
 
     static check(req: Request, res: Response): void {
-        const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
+        const user = (req as any).user;
+        const mode = (req as any).mode || (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
 
-        // If middleware passed, or we are in PAPER mode bypass
         res.json({
-            authenticated: true,
-            mode: MODE,
-            isPaperBypass: MODE === 'PAPER' && !req.cookies.auth_token
+            authenticated: !!user,
+            user: user || null,
+            mode: mode
         });
     }
 }

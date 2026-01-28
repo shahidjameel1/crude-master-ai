@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useStore } from '../store/useStore';
 
 export interface HeartbeatStatus {
     status: 'HEALTHY' | 'DEGRADED' | 'UNSAFE';
@@ -13,12 +14,19 @@ export const useHeartbeat = () => {
         lastCheck: Date.now()
     });
 
+    const isAuthenticated = useStore(state => state.isAuthenticated);
+
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const checkHeartbeat = async () => {
             const start = Date.now();
             try {
+                const token = localStorage.getItem('friday_auth_token');
                 const res = await fetch('/api/security/heartbeat', {
-                    credentials: 'include'
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
                 const data = await res.json();
                 const end = Date.now();

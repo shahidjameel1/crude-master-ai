@@ -5,14 +5,13 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
     const MODE = (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase();
 
-    // 1. PAPER Mode Bypass (Android/Termux Stability)
-    // If in PAPER mode, we allow access to facilitate local inspection without auth loops
-    // Check for token in cookies
-    const token = req.cookies.auth_token;
+    // 1. Extract Token from Authorization Header (Bearer <token>)
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
     if (!token) {
         if (req.path !== '/api/auth/check') {
-            console.warn(`🔞 Auth failed: No token found in cookies for ${req.path}`);
+            console.warn(`🔞 Auth failed: No Bearer token found in Authorization header for ${req.path}`);
         }
         res.status(401).json({ error: 'Not authenticated' });
         return;
@@ -24,11 +23,9 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
         (req as any).mode = decoded.mode || 'PAPER';
         next();
     } catch (error) {
-        if (MODE === 'PAPER') {
-            (req as any).mode = 'PAPER';
-            next();
-            return;
-        }
+        // If token invalid but in PAPER mode config, we might allow (optional, check requirement)
+        // User said: "All protected APIs use Authorization header"
+        // "One login = one mode"
         res.status(401).json({ error: 'Invalid token' });
     }
 };

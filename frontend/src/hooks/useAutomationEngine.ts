@@ -46,9 +46,12 @@ export function useAutomationEngine(
 
         try {
             // 🚀 Call Backend Emergency Kill
-            await fetch('http://localhost:3002/api/security/kill', {
+            const token = localStorage.getItem('friday_auth_token');
+            await fetch('/api/security/kill', {
                 method: 'POST',
-                credentials: 'include'
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
         } catch (err) {
             console.error('Failed to trigger backend kill switch:', err);

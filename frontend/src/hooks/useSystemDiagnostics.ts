@@ -33,6 +33,8 @@ export const useSystemDiagnostics = () => {
     }, []);
 
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         const runDiagnostics = () => {
             const now = Date.now();
 

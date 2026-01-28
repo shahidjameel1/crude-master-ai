@@ -44,6 +44,13 @@ export class StrategyEngineService {
     }
 
     /**
+     * Get current cache for a timeframe
+     */
+    public getCache(timeframe: string): Candle[] {
+        return this.caches[timeframe] || [];
+    }
+
+    /**
      * Run the full multi-timeframe analysis
      */
     public async runAnalysis(): Promise<AnalysisResult> {

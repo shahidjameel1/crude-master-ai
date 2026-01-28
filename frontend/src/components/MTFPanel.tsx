@@ -46,8 +46,11 @@ function MTFSnapshot({ timeframe }: MTFSnapshotProps) {
 
         const loadData = async () => {
             try {
+                const token = localStorage.getItem('friday_auth_token');
                 const response = await fetch(`/api/candles?timeframe=${timeframe}`, {
-                    credentials: 'include'
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
                 const data = await response.json();
                 if (data.candles && seriesRef.current) {

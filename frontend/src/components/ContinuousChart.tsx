@@ -49,9 +49,18 @@ export function ContinuousChart({ paperTrading }: ContinuousChartProps) {
     const loadHistoricalData = useCallback(async () => {
         if (!candleSeriesRef.current) return;
         try {
+            const token = localStorage.getItem('friday_auth_token');
             const response = await fetch(`/api/candles?timeframe=${activeTimeframe}`, {
-                credentials: 'include'
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
+
+            if (!response.ok) {
+                console.warn('📡 Historical feed offline, waiting for server fallback...');
+                return;
+            }
+
             const data = await response.json();
 
             if (data.candles && Array.isArray(data.candles)) {

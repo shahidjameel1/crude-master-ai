@@ -23,13 +23,13 @@ export const AuthOverlay: React.FC = () => {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: cleanUser, password: cleanPass }),
-                credentials: 'include'
+                body: JSON.stringify({ username: cleanUser, password: cleanPass })
             });
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok && data.token) {
+                localStorage.setItem('friday_auth_token', data.token);
                 await useStore.getState().fetchSystemStatus();
                 setAuthenticated(true);
                 pushNotification('SUCCESS', `${data.mode} Session Active`);

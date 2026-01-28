@@ -70,17 +70,26 @@ function App() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [globalKillSwitch, triggerKillSwitch]);
 
-    // Zero silent auto-login. App must always start at verification terminal.
+    // Token-based boot sequence
     useEffect(() => {
-        setAuthLoading(false);
-    }, [setAuthLoading]);
+        const boot = async () => {
+            const token = localStorage.getItem('friday_auth_token');
+            if (token) {
+                await fetchSystemStatus();
+            }
+            setAuthLoading(false);
+        };
+        boot();
+    }, [fetchSystemStatus, setAuthLoading]);
 
-    // Fetch System Status (Mode/Health)
+    // Fetch System Status (Mode/Health) - ONLY WHEN AUTHENTICATED
     useEffect(() => {
+        if (!isAuthenticated) return;
+
         fetchSystemStatus();
         const interval = setInterval(fetchSystemStatus, 30000); // Pulse every 30s
         return () => clearInterval(interval);
-    }, [fetchSystemStatus]);
+    }, [fetchSystemStatus, isAuthenticated]);
 
     // Global 401 Interceptor
     useEffect(() => {

@@ -17,9 +17,12 @@ export function ControlPanel() {
     const activateKillSwitch = async () => {
         if (!confirm("⚠️ ACTIVATE EMERGENCY KILL SWITCH? This will close all positions and lock the system.")) return;
         try {
+            const token = localStorage.getItem('friday_auth_token');
             await fetch('/api/security/kill', {
                 method: 'POST',
-                credentials: 'include'
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
             setAutomationMode('OFF');
             alert("SYSTEM LOCKED. RED ALERT.");

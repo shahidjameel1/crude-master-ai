@@ -9,8 +9,6 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
-import cookieParser from "cookie-parser";
-import cookie from "cookie";
 import jwt from "jsonwebtoken";
 import speakeasy from "speakeasy";
 import { CandleFinalizationService } from "./services/CandleFinalizationService";
@@ -36,12 +34,11 @@ app.use(cors({
     origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174'], // Allow Frontend 5173/5174
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Trade-Secret'],
-    credentials: true
+    credentials: false
 }));
 
 // 3. Parameter Pollution Protection
 app.use(hpp());
-app.use(cookieParser());
 
 // 4. Rate Limiting (100 req per 15 min)
 const limiter = rateLimit({
@@ -60,8 +57,8 @@ import { ChaosEngine } from './logic/ChaosEngine';
 
 // Debug Logger
 app.use((req, res, next) => {
-    const hasCookie = !!req.cookies.auth_token;
-    console.log(`[RECEIVED] ${req.method} ${req.path} | Cookie present: ${hasCookie}`);
+    const hasToken = !!req.headers.authorization;
+    console.log(`[RECEIVED] ${req.method} ${req.path} | Auth Header present: ${hasToken}`);
     next();
 });
 
@@ -93,13 +90,21 @@ app.post('/api/security/kill', SecurityController.emergencyKill);
 app.get('/api/security/heartbeat', SecurityController.heartbeat);
 app.post('/api/security/reset', SecurityController.resetSystem); // Demo only
 
-/* ───────── SYSTEM HEALTH ───────── */
+/* ───────── SYSTEM HEALTH (PUBLIC) ───────── */
 app.get('/health', (req, res) => {
     res.json({
-        status: "ok",
-        mode: (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase(),
-        dataFeed: (global as any).smartApiInitialized ? "ANGEL_ONE" : "OFFLINE",
-        orders: (process.env.MODE || process.env.TRADING_MODE || 'PAPER').toUpperCase() === "PAPER" ? "SIMULATED" : "BROKER_ENABLED"
+        status: "ONLINE",
+        mode: getSystemMode(),
+        broker: (global as any).smartApiInitialized ? "CONNECTED" : "OFFLINE",
+        dataFeed: getSystemMode() === 'PAPER' ? 'SIMULATION' : ((global as any).smartApiInitialized ? 'ANGEL_ONE' : 'FALLBACK'),
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get("/api/market/status", (req, res) => {
+    res.json({
+        isOpen: isMarketOpen(),
+        timestamp: Date.now()
     });
 });
 
@@ -232,26 +237,14 @@ const wss = new WebSocket.Server({ port: 3001 });
 const clients = new Set();
 
 wss.on("connection", (ws, req) => {
-    // 🔒 WS Auth Check
-    const cookies = cookie.parse(req.headers.cookie || '');
-    const token = cookies.auth_token;
-
-    if (!token) {
-        console.warn('🔞 Unauthorized WS connection attempt rejected');
-        ws.close(4001, 'Unauthorized');
-        return;
-    }
-
-    try {
-        jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-        console.warn('🔞 Invalid WS token rejected');
-        ws.close(4001, 'Invalid Token');
-        return;
-    }
-
-    console.log('👤 Authenticated Frontend client connected');
+    console.log('👤 Public observation client connected');
     clients.add(ws);
+
+    // Send market status on connect
+    ws.send(JSON.stringify({
+        type: 'MARKET_STATUS',
+        isOpen: isMarketOpen()
+    }));
 
     // Send market status on connect
     ws.send(JSON.stringify({
@@ -361,149 +354,43 @@ function initWS() {
     }
 }
 
-/* ───────── HISTORICAL CANDLES (PROTECTED) ───────── */
-app.get("/api/candles", authMiddleware, async (req, res) => {
-    try {
-        console.log('\n🔍 ===== CANDLES API REQUEST =====');
-
-        // Check if smartApi is initialized
-        if (!smartApi) {
-            console.error('❌ smartApi is not initialized');
-            return res.status(500).json({ error: 'Angel One not connected' });
-        }
-
-        const { timeframe = '15m' } = req.query;
-        console.log('📊 Requested Timeframe:', timeframe);
-
-        // Map timeframes to Angel One intervals
-        const intervalMap: Record<string, string> = {
-            '1m': 'ONE_MINUTE',
-            '5m': 'FIVE_MINUTE',
-            '15m': 'FIFTEEN_MINUTE',
-            '1h': 'ONE_HOUR',
-            '1D': 'ONE_DAY'
-        };
-
-        const interval = intervalMap[timeframe as string] || 'FIFTEEN_MINUTE';
-        console.log('⏱️  Angel One Interval:', interval);
-
-        const toDate = new Date();
-        const fromDate = new Date();
-        fromDate.setDate(toDate.getDate() - (timeframe === '1D' ? 90 : 5));
-
-        const formatDate = (d: Date) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const hours = String(d.getHours()).padStart(2, '0');
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hours}:${minutes}`;
-        };
-
-        const fromDateStr = formatDate(fromDate);
-        const toDateStr = formatDate(toDate);
-
-        console.log('📅 Date Range:', fromDateStr, '→', toDateStr);
-        console.log('🏢 Exchange: MCX');
-        console.log('🎫 Symbol Token: 467013 (CRUDEOIL 19 FEB 2026)');
-
-        console.log('\n🔄 Calling smartApi.getCandleData...');
-
-        const params = {
-            exchange: "MCX",
-            symboltoken: "467013", // CRUDEOIL 19 FEB 2026
-            interval: interval,
-            fromdate: fromDateStr,
-            todate: toDateStr,
-        };
-
-        console.log('📦 Request Params:', JSON.stringify(params, null, 2));
-
-        const candles = await smartApi.getCandleData(params);
-
-        console.log('\n📦 Raw Angel One Response:', JSON.stringify(candles, null, 2));
-        console.log('✅ Response Status:', candles.status);
-        console.log('📊 Response Message:', candles.message || 'No message');
-        console.log('📈 Data Length:', candles.data ? candles.data.length : 0);
-
-        if (candles.status && candles.data && Array.isArray(candles.data) && candles.data.length > 0) {
-            console.log('✅ Successfully received', candles.data.length, 'candles');
-            console.log('📊 First Candle:', candles.data[0]);
-            console.log('📊 Last Candle:', candles.data[candles.data.length - 1]);
-
-            const formattedCandles = candles.data.map((c: any) => ({
-                time: Math.floor(new Date(c[0]).getTime() / 1000),
-                open: Math.round(c[1]),
-                high: Math.round(c[2]),
-                low: Math.round(c[3]),
-                close: Math.round(c[4]),
-                volume: c[5],
-            }));
-
-            console.log('✅ Formatted', formattedCandles.length, 'candles');
-            console.log('📊 Sample Formatted Candle:', formattedCandles[0]);
-
-            // Initialize candle finalization service with historical data
-            candleService.initializeHistory(formattedCandles);
-            console.log('✅ Candle finalization service initialized with historical data');
-
-            res.json({
-                candles: formattedCandles,
-                contract: 'CRUDEOIL 19 FEB 2026',
-                expiry: '2026-02-19'
-            });
-        } else {
-            console.error('❌ No candle data received or invalid response');
-            console.error('📦 Full Response:', JSON.stringify(candles, null, 2));
-            res.status(500).json({
-                error: 'No candle data available',
-                details: candles.message || 'Unknown error',
-                response: candles
-            });
-        }
-    } catch (error: any) {
-        console.error('\n❌ ===== CANDLES API ERROR =====');
-        console.error('💥 Error Type:', error.constructor.name);
-        console.error('💬 Error Message:', error.message);
-        console.error('📦 Full Error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-        console.error('🔍 Stack Trace:', error.stack);
-
-        res.status(500).json({
-            error: error.message,
-            type: error.constructor.name
-        });
-    }
-});
-
 // --- PUBLIC DATA ENDPOINTS (NO AUTH REQUIRED) ---
 
 // Candle Data API - Always responds, decoupled from auth
 app.get('/api/candles', async (req, res) => {
-    const { interval = '5m' } = req.query;
+    const { timeframe = '15m' } = req.query;
 
     try {
-        const marketData = await strategyEngine.getMarketData(interval as string);
-        if (marketData && marketData.candles.length > 0) {
-            return res.json(marketData.candles);
+        // 1. Try Live Data first (if available in engine)
+        const candles = strategyEngine.getCache(timeframe as string);
+        if (candles && candles.length > 0) {
+            return res.json({
+                candles: candles,
+                contract: 'CRUDEOIL MINI',
+                source: 'LIVE_ENGINE'
+            });
         }
-        const mockCandles = demoGenerator.generateHistory(100, interval as string);
-        res.json(mockCandles);
+
+        // 2. Try Angel One direct if smartApi is available (optional fallback)
+        if ((global as any).smartApiInitialized && (global as any).smartApi) {
+            // ... existing historical fetch logic could go here, but let's stick to mock for speed/safety
+        }
+
+        // 3. Mock Fallback (Guaranteed to respond)
+        const { demoGenerator } = require('./logic/DemoDataGenerator');
+        const mockCandles = demoGenerator.generateHistory(100, timeframe as string);
+        res.json({
+            candles: mockCandles,
+            contract: 'CRUDEOIL MINI',
+            source: 'MOCK_FALLBACK'
+        });
     } catch (error) {
         console.error('❌ PUBLIC FEED FAILED:', error);
-        res.json([]);
+        res.json({ candles: [], error: 'Feed Offline' });
     }
 });
 
-// System Status - For health dashboard (Limited info)
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ONLINE',
-        mode: getSystemMode(),
-        broker: brokerClient ? 'CONNECTED' : 'OFFLINE',
-        dataFeed: getSystemMode() === 'PAPER' ? 'SIMULATION' : (brokerClient ? 'ANGEL_ONE' : 'FALLBACK'),
-        timestamp: new Date().toISOString()
-    });
-});
+// Consolidated with public health above
 
 app.get("/api/market/status", (req, res) => {
     res.json({

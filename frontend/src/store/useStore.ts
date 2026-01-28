@@ -656,13 +656,14 @@ export const useStore = create<CockpitState>((set, get) => ({
         try {
             addLog(`🚀 EXECUTION: Sending ${pendingTrade.side} Intent to Firewall...`);
 
-            // @ts-ignore
-            const tradeSecret = import.meta.env.VITE_TRADE_SECRET || '';
+            const token = localStorage.getItem('friday_auth_token');
+            const tradeSecret = (import.meta as any).env.VITE_TRADE_SECRET || '';
 
             const response = await fetch('/api/trade', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                     'X-Trade-Secret': tradeSecret
                 },
                 body: JSON.stringify({
@@ -672,8 +673,7 @@ export const useStore = create<CockpitState>((set, get) => ({
                     quantity: 1, // Enforce logic here or backend
                     score: pendingTrade.confluenceSnapshot,
                     timestamp: pendingTrade.timestamp
-                }),
-                credentials: 'include'
+                })
             });
 
             const result = await response.json();
@@ -717,18 +717,30 @@ export const useStore = create<CockpitState>((set, get) => ({
     setAuthenticated: (val) => set({ isAuthenticated: val }),
     setAuthLoading: (val) => set({ isAuthLoading: val }),
 
+    logout: () => {
+        localStorage.removeItem('friday_auth_token');
+        set({ isAuthenticated: false, systemMode: 'PAPER' });
+    },
+
     fetchSystemStatus: async () => {
+        const token = localStorage.getItem('friday_auth_token');
         try {
-            const res = await fetch('/health');
-            const data = await res.json();
-            set({
-                systemMode: data.mode as any,
-                backendStatus: {
-                    status: data.status,
-                    dataFeed: data.dataFeed,
-                    orders: data.orders
+            const res = await fetch('/api/auth/check', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
             });
+            const data = await res.json();
+
+            if (res.ok && data.authenticated) {
+                set({
+                    isAuthenticated: true,
+                    systemMode: data.mode as any
+                });
+            } else {
+                localStorage.removeItem('friday_auth_token');
+                set({ isAuthenticated: false });
+            }
         } catch (error) {
             console.error('Failed to fetch system status:', error);
         }
@@ -759,7 +771,7 @@ export const useStore = create<CockpitState>((set, get) => ({
 
         const isCriticalFailure = nextDiagnostics.auth === 'FAIL' ||
             nextDiagnostics.marketData === 'DOWN' ||
-            nextDiagnostics.backend === 'UNREACHABLE';
+            nextDiagnostics.backend === 'UNSAFE';
 
         if (isCriticalFailure && s.agentState !== 'IDLE') {
             nextAgentState = 'IDLE';
